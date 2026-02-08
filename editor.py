@@ -4,7 +4,6 @@ from widgets.tool_panel import ToolPanel
 from widgets.status_bar import StatusBar
 from widgets.canvas import CanvasWidget
 
-
 class GraphicsEditor:
     def __init__(self):
         self.root = ctk.CTk()
@@ -38,9 +37,9 @@ class GraphicsEditor:
         self.canvas_width = 800
         self.canvas_height = 600
 
+        self.canvas_widget = CanvasWidget(self)
         self.create_menu()
 
-        self.canvas_widget = CanvasWidget(self)
         self.tool_panel = ToolPanel(self)
         self.status_bar = StatusBar(self)
 
@@ -55,6 +54,8 @@ class GraphicsEditor:
         file_menu = Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="Файл", menu=file_menu)
         file_menu.add_command(label="Новый холст", command=self.create_new_canvas_dialog)
+        file_menu.add_command(label="Открыть", command= self.canvas_widget.load_canvas)
+        file_menu.add_command(label="Сохранить", command=self.canvas_widget.save_canvas)
         file_menu.add_separator()
         file_menu.add_command(label="Выход", command=self.root.quit)
 

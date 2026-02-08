@@ -57,7 +57,7 @@ class ToolPanel:
 
         self.zoom_label = ctk.CTkLabel(
             scale_frame,
-            text="100%",
+            text="Масштаб",
             width=60
         )
         self.zoom_label.pack(side="left", padx=5)
@@ -72,7 +72,7 @@ class ToolPanel:
 
         self.reset_zoom_btn = ctk.CTkButton(
             scale_frame,
-            text="Сброс",
+            text="X",
             width=60,
             command=self.editor.canvas_widget.reset_zoom
         )
