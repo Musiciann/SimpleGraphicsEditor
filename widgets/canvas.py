@@ -1,15 +1,15 @@
 import customtkinter as ctk
 from tkinter import messagebox
-from algorithms.algorithms import dda_algorithm_pixels, bresenham_algorithm_pixels, wu_algorithm_pixels
-import json
-import os
-from tkinter import filedialog
 from .canvas_scale import CanvasScale
+from tools.line_tool import LineTool
+from file_options import FileOptions
 
 
 class CanvasWidget:
     def __init__(self, editor):
         self.editor = editor
+        self.line_tool = LineTool(self)
+        self.file_options = FileOptions(self)
 
         self.main_frame = None
         self.canvas_frame = None
@@ -100,10 +100,10 @@ class CanvasWidget:
         self.editor.view_center_x = self.editor.canvas_width // 2
         self.editor.view_center_y = self.editor.canvas_height // 2
 
-        self.canvas.bind("<Button-1>", self.canvas_click)
+        # Используем метод из line_tool
+        self.canvas.bind("<Button-1>", self.line_tool.canvas_click)
         self.canvas.bind("<Motion>", self.show_coordinates)
         self.canvas.bind("<MouseWheel>", self.on_mouse_wheel)
-        self.canvas.bind("<Control-MouseWheel>", self.on_mouse_wheel)
 
         self.canvas.bind("<ButtonPress-2>", self.start_drag)
         self.canvas.bind("<ButtonPress-3>", self.start_drag)
@@ -122,7 +122,6 @@ class CanvasWidget:
 
         self.update_step_label()
         self.disable_step_buttons()
-
 
     def draw_pixel_grid(self):
         if not self.editor.canvas_created:
@@ -182,64 +181,10 @@ class CanvasWidget:
             'tag': tag
         })
 
-    def draw_line(self):
-        if not self.editor.canvas_created or not self.editor.start_point or not self.editor.end_point:
-            return
-
-        x1, y1 = self.editor.start_point
-        x2, y2 = self.editor.end_point
-
-        if self.editor.debug_mode:
-            self.editor.step_pixels = self.get_pixels_for_algorithm(x1, y1, x2, y2)
-            self.editor.total_steps = len(self.editor.step_pixels)
-            self.editor.current_step = 0
-            self.editor.show_all = False
-
-            self.draw_debug_step()
-
-            self.enable_step_buttons()
-            self.update_step_label()
-        else:
-            pixels = self.get_pixels_for_algorithm(x1, y1, x2, y2)
-
-            line_info = {
-                'type': 'line',
-                'start': (x1, y1),
-                'end': (x2, y2),
-                'algorithm': self.editor.selected_algorithm,
-                'pixels': pixels,
-                'pixel_ids': []
-            }
-
-            for pixel in pixels:
-                if len(pixel) == 3:
-                    x, y, intensity = pixel
-                    color = self.get_color_from_intensity(intensity)
-                else:
-                    x, y = pixel
-                    color = "black"
-
-                screen_x = self.canvas_to_screen_x(x)
-                screen_y = self.canvas_to_screen_y(y)
-
-                pixel_size = max(1, self.editor.scale_factor)
-
-                x1_pixel = screen_x
-                y1_pixel = screen_y
-                x2_pixel = screen_x + pixel_size
-                y2_pixel = screen_y + pixel_size
-
-                pixel_id = self.canvas.create_rectangle(
-                    x1_pixel, y1_pixel,
-                    x2_pixel, y2_pixel,
-                    fill=color, outline=color, tags="line_pixel"
-                )
-                line_info['pixel_ids'].append(pixel_id)
-
-            self.editor.lines.append(line_info)
+    # Перенесен в line_tool
+    # def draw_line(self): ...
 
     def draw_debug_pixel(self, x, y, color):
-
         screen_x = self.canvas_to_screen_x(x)
         screen_y = self.canvas_to_screen_y(y)
 
@@ -255,40 +200,8 @@ class CanvasWidget:
             fill=color, outline="#404040", width=1, tags="debug"
         )
 
-    def canvas_click(self, event):
-        if not self.editor.canvas_created or self.editor.current_tool != "line":
-            return
-
-        x = self.screen_to_canvas_x(event.x)
-        y = self.screen_to_canvas_y(event.y)
-
-        if x < 0 or x >= self.editor.original_width or y < 0 or y >= self.editor.original_height:
-            return
-
-        if self.editor.start_point is None:
-            if self.editor.debug_mode:
-                if hasattr(self, 'canvas') and self.canvas is not None:
-                    self.canvas.delete("debug")
-                    self.canvas.delete("start")
-                    self.canvas.delete("end")
-                self.reset_step_mode()
-                self.remove_debug_points()
-
-            self.editor.start_point = (x, y)
-            self.draw_pixel_point(x, y, "blue", "start")
-        else:
-            self.editor.end_point = (x, y)
-            self.draw_pixel_point(x, y, "red", "end")
-
-            self.draw_line()
-
-            if not self.editor.debug_mode:
-                if hasattr(self, 'canvas') and self.canvas is not None:
-                    self.canvas.delete("start")
-                    self.canvas.delete("end")
-                self.remove_debug_points()
-                self.editor.start_point = None
-                self.editor.end_point = None
+    # Перенесен в line_tool
+    # def canvas_click(self, event): ...
 
     def canvas_to_screen_x_for_grid(self, canvas_x):
         screen_x = (canvas_x - self.editor.view_center_x) * self.editor.scale_factor + \
@@ -300,13 +213,8 @@ class CanvasWidget:
                    self.editor.view_center_y + self.editor.view_offset_y
         return int(round(screen_y))
 
-    def get_pixels_for_algorithm(self, x1, y1, x2, y2):
-        if self.editor.selected_algorithm == "DDA":
-            return dda_algorithm_pixels(x1, y1, x2, y2)
-        elif self.editor.selected_algorithm == "Bresenham":
-            return bresenham_algorithm_pixels(x1, y1, x2, y2)
-        else:
-            return wu_algorithm_pixels(x1, y1, x2, y2)
+    # Перенесен в line_tool
+    # def get_pixels_for_algorithm(self, x1, y1, x2, y2): ...
 
     def draw_debug_step(self):
         if not self.editor.canvas_created or not self.editor.debug_mode:
@@ -328,20 +236,15 @@ class CanvasWidget:
 
                 if len(pixel) == 3:
                     x, y, intensity = pixel
-                    color = self.get_color_from_intensity(intensity)
+                    color = self.line_tool.get_color_from_intensity(intensity)
                     self.draw_debug_pixel(x, y, color)
                 else:
                     x, y = pixel
                     self.draw_debug_pixel(x, y, "#000000")
 
-    @staticmethod
-    def get_color_from_intensity(intensity):
-        gray_value = int(255 * (1 - intensity))
-        if gray_value < 0:
-            gray_value = 0
-        if gray_value > 255:
-            gray_value = 255
-        return f'#{gray_value:02x}{gray_value:02x}{gray_value:02x}'
+    # Перенесен в line_tool
+    # @staticmethod
+    # def get_color_from_intensity(intensity): ...
 
     def first_step(self):
         if self.editor.total_steps > 0:
@@ -559,115 +462,7 @@ class CanvasWidget:
         self.redraw_canvas()
 
     def save_canvas(self, filename=None):
-        if not self.editor.canvas_created or not self.editor.lines:
-            messagebox.showwarning("Внимание", "Нечего сохранять - холст пуст")
-            return False
-
-        if not filename:
-            filename = filedialog.asksaveasfilename(
-                defaultextension=".json",
-                filetypes=[
-                    ("JSON файлы", "*.json"),
-                    ("Все файлы", "*.*")
-                ],
-                title="Сохранить холст"
-            )
-
-        if not filename:
-            return False
-
-        try:
-            save_data = {
-                'canvas_width': self.editor.original_width,
-                'canvas_height': self.editor.original_height,
-                'lines': [],
-                'points': []
-            }
-
-            for line_info in self.editor.lines:
-                line_data = {
-                    'type': line_info['type'],
-                    'start': line_info['start'],
-                    'end': line_info['end'],
-                    'algorithm': line_info['algorithm'],
-                    'pixels': line_info['pixels']
-                }
-                save_data['lines'].append(line_data)
-
-            for point_info in self.editor.points:
-                point_data = {
-                    'x': point_info['x'],
-                    'y': point_info['y'],
-                    'color': point_info['color'],
-                    'tag': point_info['tag']
-                }
-                save_data['points'].append(point_data)
-
-            with open(filename, 'w', encoding='utf-8') as f:
-                json.dump(save_data, f, ensure_ascii=False, indent=2)
-
-            messagebox.showinfo("Успех", f"Холст сохранен в файл:\n{filename}")
-            return True
-
-        except Exception as e:
-            messagebox.showerror("Ошибка", f"Не удалось сохранить файл:\n{str(e)}")
-            return False
+        return self.file_options.save_canvas(filename)
 
     def load_canvas(self, filename=None):
-        if not filename:
-            filename = filedialog.askopenfilename(
-                filetypes=[
-                    ("JSON файлы", "*.json"),
-                    ("Все файлы", "*.*")
-                ],
-                title="Открыть холст"
-            )
-
-        if not filename or not os.path.exists(filename):
-            return False
-
-        try:
-            with open(filename, 'r', encoding='utf-8') as f:
-                load_data = json.load(f)
-
-            self.editor.canvas_width = load_data['canvas_width']
-            self.editor.canvas_height = load_data['canvas_height']
-            self.editor.original_width = load_data['canvas_width']
-            self.editor.original_height = load_data['canvas_height']
-
-            self.editor.lines = []
-            self.editor.points = []
-            self.editor.start_point = None
-            self.editor.end_point = None
-
-            self.create_canvas_area()
-
-            for line_data in load_data['lines']:
-                line_info = {
-                    'type': line_data['type'],
-                    'start': tuple(line_data['start']),
-                    'end': tuple(line_data['end']),
-                    'algorithm': line_data['algorithm'],
-                    'pixels': line_data['pixels'],
-                    'pixel_ids': []
-                }
-                self.editor.lines.append(line_info)
-
-            for point_data in load_data['points']:
-                point_info = {
-                    'x': point_data['x'],
-                    'y': point_data['y'],
-                    'color': point_data['color'],
-                    'tag': point_data['tag'],
-                    'id': None
-                }
-                self.editor.points.append(point_info)
-
-            self.redraw_canvas()
-
-            messagebox.showinfo("Успех", f"Холст загружен из файла:\n{filename}")
-            return True
-
-        except Exception as e:
-            messagebox.showerror("Ошибка", f"Не удалось загрузить файл:\n{str(e)}")
-            return False
+        return self.file_options.load_canvas(filename)

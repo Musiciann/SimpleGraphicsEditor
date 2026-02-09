@@ -1,3 +1,6 @@
+from tools import LineTool
+
+
 class CanvasScale:
 
     @staticmethod
@@ -130,7 +133,7 @@ class CanvasScale:
                 for pixel in line_info['pixels']:
                     if len(pixel) == 3:
                         x, y, intensity = pixel
-                        color = self.get_color_from_intensity(intensity)
+                        color = LineTool.get_color_from_intensity(intensity)
                     else:
                         x, y = pixel
                         color = "black"
