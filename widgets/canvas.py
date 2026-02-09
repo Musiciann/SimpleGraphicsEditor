@@ -1,13 +1,21 @@
 import customtkinter as ctk
-from widgets.canvas_scale import CanvasScale
 from tkinter import messagebox
 from algorithms.algorithms import dda_algorithm_pixels, bresenham_algorithm_pixels, wu_algorithm_pixels
 import json
 import os
 from tkinter import filedialog
+from .canvas_scale import CanvasScale
 
 
 class CanvasWidget:
+    def __init__(self, editor):
+        self.editor = editor
+
+        self.main_frame = None
+        self.canvas_frame = None
+        self.canvas = None
+        self.scroll_frame = None
+        self.scale_label = None
 
     def canvas_to_screen_x(self, canvas_x):
         return CanvasScale.canvas_to_screen_x(self, canvas_x)
@@ -36,15 +44,6 @@ class CanvasWidget:
     def redraw_canvas(self):
         CanvasScale.redraw_canvas(self)
 
-    def __init__(self, editor):
-        self.editor = editor
-
-        self.main_frame = None
-        self.canvas_frame = None
-        self.canvas = None
-        self.scroll_frame = None
-        self.scale_label = None
-
     def pack_widget(self):
         self.main_frame = ctk.CTkFrame(self.editor.root)
         self.main_frame.pack(side="left", fill="both", expand=True, padx=5, pady=5)
@@ -56,7 +55,10 @@ class CanvasWidget:
             self.editor.points = []
             self.editor.start_point = None
             self.editor.end_point = None
-            self.reset_step_mode()
+            self.editor.step_pixels = []
+            self.editor.current_step = 0
+            self.editor.total_steps = 0
+            self.editor.show_all = False
 
         self.editor.original_width = self.editor.canvas_width
         self.editor.original_height = self.editor.canvas_height
@@ -118,6 +120,10 @@ class CanvasWidget:
         if self.editor.grid_visible:
             self.draw_pixel_grid()
 
+        self.update_step_label()
+        self.disable_step_buttons()
+
+
     def draw_pixel_grid(self):
         if not self.editor.canvas_created:
             return
@@ -129,45 +135,25 @@ class CanvasWidget:
 
         for x in range(0, self.editor.original_width + 1):
             screen_x = self.canvas_to_screen_x(x)
-            if 0 <= screen_x <= self.editor.canvas_width:
+            if -10 <= screen_x <= self.editor.canvas_width + 10:
                 self.canvas.create_line(
-                    screen_x, 0, screen_x, self.editor.canvas_height,
-                    fill="#e0e0e0", tags="grid", width=1
+                    screen_x, 0,
+                    screen_x, self.editor.canvas_height,
+                    fill="#e0e0e0",
+                    tags="grid",
+                    width=1
                 )
 
         for y in range(0, self.editor.original_height + 1):
             screen_y = self.canvas_to_screen_y(y)
-            if 0 <= screen_y <= self.editor.canvas_height:
+            if -10 <= screen_y <= self.editor.canvas_height + 10:
                 self.canvas.create_line(
-                    0, screen_y, self.editor.canvas_width, screen_y,
-                    fill="#e0e0e0", tags="grid", width=1
+                    0, screen_y,
+                    self.editor.canvas_width, screen_y,
+                    fill="#e0e0e0",
+                    tags="grid",
+                    width=1
                 )
-
-    def canvas_click(self, event):
-        if not self.editor.canvas_created or self.editor.current_tool != "line":
-            return
-
-        x = self.screen_to_canvas_x(event.x)
-        y = self.screen_to_canvas_y(event.y)
-
-        if x < 0 or x >= self.editor.original_width or y < 0 or y >= self.editor.original_height:
-            return
-
-        if self.editor.start_point is None:
-            if self.editor.debug_mode:
-                self.canvas.delete("debug")
-                self.canvas.delete("start")
-                self.canvas.delete("end")
-                self.reset_step_mode()
-
-            self.editor.start_point = (x, y)
-            self.draw_pixel_point(x, y, "blue", "start")
-        else:
-            self.editor.end_point = (x, y)
-            self.draw_pixel_point(x, y, "red", "end")
-            self.draw_line()
-            self.editor.start_point = None
-            self.editor.end_point = None
 
     def draw_pixel_point(self, x, y, color, tag):
         if not self.editor.canvas_created:
@@ -176,20 +162,12 @@ class CanvasWidget:
         screen_x = self.canvas_to_screen_x(x)
         screen_y = self.canvas_to_screen_y(y)
 
-        if not (0 <= screen_x <= self.editor.canvas_width and 0 <= screen_y <= self.editor.canvas_height):
-            return
+        pixel_size = max(1, self.editor.scale_factor)
 
-        pixel_size = max(1, int(self.editor.scale_factor))
-
-        x1 = screen_x - pixel_size // 2
-        y1 = screen_y - pixel_size // 2
-        x2 = screen_x + pixel_size // 2
-        y2 = screen_y + pixel_size // 2
-
-        x1 = max(0, min(x1, self.editor.canvas_width))
-        y1 = max(0, min(y1, self.editor.canvas_height))
-        x2 = max(0, min(x2, self.editor.canvas_width))
-        y2 = max(0, min(y2, self.editor.canvas_height))
+        x1 = screen_x
+        y1 = screen_y
+        x2 = screen_x + pixel_size
+        y2 = screen_y + pixel_size
 
         point_id = self.canvas.create_rectangle(
             x1, y1, x2, y2,
@@ -244,20 +222,12 @@ class CanvasWidget:
                 screen_x = self.canvas_to_screen_x(x)
                 screen_y = self.canvas_to_screen_y(y)
 
-                if not (0 <= screen_x <= self.editor.canvas_width and 0 <= screen_y <= self.editor.canvas_height):
-                    continue
+                pixel_size = max(1, self.editor.scale_factor)
 
-                pixel_size = max(1, int(self.editor.scale_factor))
-
-                x1_pixel = screen_x - pixel_size // 2
-                y1_pixel = screen_y - pixel_size // 2
-                x2_pixel = screen_x + pixel_size // 2
-                y2_pixel = screen_y + pixel_size // 2
-
-                x1_pixel = max(0, min(x1_pixel, self.editor.canvas_width))
-                y1_pixel = max(0, min(y1_pixel, self.editor.canvas_height))
-                x2_pixel = max(0, min(x2_pixel, self.editor.canvas_width))
-                y2_pixel = max(0, min(y2_pixel, self.editor.canvas_height))
+                x1_pixel = screen_x
+                y1_pixel = screen_y
+                x2_pixel = screen_x + pixel_size
+                y2_pixel = screen_y + pixel_size
 
                 pixel_id = self.canvas.create_rectangle(
                     x1_pixel, y1_pixel,
@@ -267,6 +237,68 @@ class CanvasWidget:
                 line_info['pixel_ids'].append(pixel_id)
 
             self.editor.lines.append(line_info)
+
+    def draw_debug_pixel(self, x, y, color):
+
+        screen_x = self.canvas_to_screen_x(x)
+        screen_y = self.canvas_to_screen_y(y)
+
+        pixel_size = max(1, self.editor.scale_factor)
+
+        x1 = screen_x
+        y1 = screen_y
+        x2 = screen_x + pixel_size
+        y2 = screen_y + pixel_size
+
+        self.canvas.create_rectangle(
+            x1, y1, x2, y2,
+            fill=color, outline="#404040", width=1, tags="debug"
+        )
+
+    def canvas_click(self, event):
+        if not self.editor.canvas_created or self.editor.current_tool != "line":
+            return
+
+        x = self.screen_to_canvas_x(event.x)
+        y = self.screen_to_canvas_y(event.y)
+
+        if x < 0 or x >= self.editor.original_width or y < 0 or y >= self.editor.original_height:
+            return
+
+        if self.editor.start_point is None:
+            if self.editor.debug_mode:
+                if hasattr(self, 'canvas') and self.canvas is not None:
+                    self.canvas.delete("debug")
+                    self.canvas.delete("start")
+                    self.canvas.delete("end")
+                self.reset_step_mode()
+                self.remove_debug_points()
+
+            self.editor.start_point = (x, y)
+            self.draw_pixel_point(x, y, "blue", "start")
+        else:
+            self.editor.end_point = (x, y)
+            self.draw_pixel_point(x, y, "red", "end")
+
+            self.draw_line()
+
+            if not self.editor.debug_mode:
+                if hasattr(self, 'canvas') and self.canvas is not None:
+                    self.canvas.delete("start")
+                    self.canvas.delete("end")
+                self.remove_debug_points()
+                self.editor.start_point = None
+                self.editor.end_point = None
+
+    def canvas_to_screen_x_for_grid(self, canvas_x):
+        screen_x = (canvas_x - self.editor.view_center_x) * self.editor.scale_factor + \
+                   self.editor.view_center_x + self.editor.view_offset_x
+        return int(round(screen_x))
+
+    def canvas_to_screen_y_for_grid(self, canvas_y):
+        screen_y = (canvas_y - self.editor.view_center_y) * self.editor.scale_factor + \
+                   self.editor.view_center_y + self.editor.view_offset_y
+        return int(round(screen_y))
 
     def get_pixels_for_algorithm(self, x1, y1, x2, y2):
         if self.editor.selected_algorithm == "DDA":
@@ -302,31 +334,8 @@ class CanvasWidget:
                     x, y = pixel
                     self.draw_debug_pixel(x, y, "#000000")
 
-    def draw_debug_pixel(self, x, y, color):
-        screen_x = self.canvas_to_screen_x(x)
-        screen_y = self.canvas_to_screen_y(y)
-
-        if not (0 <= screen_x <= self.editor.canvas_width and 0 <= screen_y <= self.editor.canvas_height):
-            return
-
-        pixel_size = max(1, int(self.editor.scale_factor))
-
-        x1 = screen_x - pixel_size // 2
-        y1 = screen_y - pixel_size // 2
-        x2 = screen_x + pixel_size // 2
-        y2 = screen_y + pixel_size // 2
-
-        x1 = max(0, min(x1, self.editor.canvas_width))
-        y1 = max(0, min(y1, self.editor.canvas_height))
-        x2 = max(0, min(x2, self.editor.canvas_width))
-        y2 = max(0, min(y2, self.editor.canvas_height))
-
-        self.canvas.create_rectangle(
-            x1, y1, x2, y2,
-            fill=color, outline="#404040", width=1, tags="debug"
-        )
-
-    def get_color_from_intensity(self, intensity):
+    @staticmethod
+    def get_color_from_intensity(intensity):
         gray_value = int(255 * (1 - intensity))
         if gray_value < 0:
             gray_value = 0
@@ -382,6 +391,9 @@ class CanvasWidget:
         self.editor.show_all = False
         self.update_step_label()
         self.disable_step_buttons()
+
+        if hasattr(self, 'canvas') and self.canvas is not None:
+            self.canvas.delete("debug")
 
     def enable_step_buttons(self):
         self.editor.tool_panel.first_btn.configure(state="normal")
@@ -495,15 +507,47 @@ class CanvasWidget:
             messagebox.showwarning("Внимание", "Сначала создайте холст")
             return
 
+        old_debug_mode = self.editor.debug_mode
         self.editor.debug_mode = self.editor.tool_panel.debug_var.get()
 
-        if self.editor.debug_mode:
-            self.editor.tool_panel.debug_checkbox.configure(state="normal")
-        else:
-            self.disable_step_buttons()
-            self.reset_step_mode()
+        if old_debug_mode != self.editor.debug_mode:
+            if not self.editor.debug_mode:
+                self.reset_step_mode()
 
-        self.redraw_canvas()
+                self.remove_debug_points()
+
+                if hasattr(self, 'canvas') and self.canvas is not None:
+                    self.canvas.delete("debug")
+                    self.canvas.delete("start")
+                    self.canvas.delete("end")
+
+                self.editor.start_point = None
+                self.editor.end_point = None
+
+                self.disable_step_buttons()
+            else:
+                self.editor.tool_panel.debug_checkbox.configure(state="normal")
+                if hasattr(self, 'canvas') and self.canvas is not None:
+                    self.canvas.delete("debug")
+                self.reset_step_mode()
+                self.remove_debug_points()
+
+        if hasattr(self, 'canvas') and self.canvas is not None:
+            self.redraw_canvas()
+
+    def remove_debug_points(self):
+        if not hasattr(self.editor, 'points'):
+            return
+
+        non_debug_points = []
+        for point in self.editor.points:
+            if point.get('tag') not in ['start', 'end']:
+                non_debug_points.append(point)
+            else:
+                if point.get('id') and hasattr(self, 'canvas') and self.canvas is not None:
+                    self.canvas.delete(point['id'])
+
+        self.editor.points = non_debug_points
 
     def toggle_grid(self):
         if not self.editor.canvas_created:
