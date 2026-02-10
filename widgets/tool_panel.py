@@ -136,7 +136,7 @@ class ToolPanel:
             radio.pack(anchor="w", padx=20, pady=2)
 
         ctk.CTkLabel(self.line_tool_frame,
-                     text="Отладочный режим",
+                     text="Режим отладки",
                      font=ctk.CTkFont(weight="bold")).pack(pady=(15, 5))
 
         debug_controls = ctk.CTkFrame(self.line_tool_frame)
