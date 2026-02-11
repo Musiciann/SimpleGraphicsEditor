@@ -4,7 +4,6 @@ from .canvas_scale import CanvasScale
 from tools.line_tool import LineTool
 from file_options import FileOptions
 
-
 class CanvasWidget:
     def __init__(self, editor):
         self.editor = editor
@@ -181,9 +180,6 @@ class CanvasWidget:
             'tag': tag
         })
 
-    # Перенесен в line_tool
-    # def draw_line(self): ...
-
     def draw_debug_pixel(self, x, y, color):
         screen_x = self.canvas_to_screen_x(x)
         screen_y = self.canvas_to_screen_y(y)
@@ -200,9 +196,6 @@ class CanvasWidget:
             fill=color, outline="#404040", width=1, tags="debug"
         )
 
-    # Перенесен в line_tool
-    # def canvas_click(self, event): ...
-
     def canvas_to_screen_x_for_grid(self, canvas_x):
         screen_x = (canvas_x - self.editor.view_center_x) * self.editor.scale_factor + \
                    self.editor.view_center_x + self.editor.view_offset_x
@@ -212,9 +205,6 @@ class CanvasWidget:
         screen_y = (canvas_y - self.editor.view_center_y) * self.editor.scale_factor + \
                    self.editor.view_center_y + self.editor.view_offset_y
         return int(round(screen_y))
-
-    # Перенесен в line_tool
-    # def get_pixels_for_algorithm(self, x1, y1, x2, y2): ...
 
     def draw_debug_step(self):
         if not self.editor.canvas_created or not self.editor.debug_mode:
@@ -241,10 +231,6 @@ class CanvasWidget:
                 else:
                     x, y = pixel
                     self.draw_debug_pixel(x, y, "#000000")
-
-    # Перенесен в line_tool
-    # @staticmethod
-    # def get_color_from_intensity(intensity): ...
 
     def first_step(self):
         if self.editor.total_steps > 0:
