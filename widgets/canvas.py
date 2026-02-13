@@ -65,7 +65,11 @@ class CanvasWidget:
         self.main_frame = ctk.CTkFrame(self.editor.root)
         self.main_frame.pack(side="left", fill="both", expand=True, padx=5, pady=5)
 
-        self.canvas_frame = ctk.CTkFrame(self.main_frame)
+        self.canvas_frame = ctk.CTkFrame(self.main_frame, corner_radius=15,
+            border_width=2,
+            border_color=("gray70", "gray25"),
+            fg_color="transparent"
+        )
         self.canvas_frame.pack(expand=True)
         info_frame = ctk.CTkFrame(self.canvas_frame)
         info_frame.pack(side="top", fill="x", pady=(0, 5))
@@ -99,7 +103,6 @@ class CanvasWidget:
         self.editor.view_center_x = self.editor.canvas_width // 2
         self.editor.view_center_y = self.editor.canvas_height // 2
 
-        # Используем метод из line_tool
         self.canvas.bind("<Button-1>", self.line_tool.canvas_click)
         self.canvas.bind("<Motion>", self.show_coordinates)
         self.canvas.bind("<MouseWheel>", self.on_mouse_wheel)

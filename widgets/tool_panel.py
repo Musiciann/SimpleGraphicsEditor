@@ -1,10 +1,17 @@
 import customtkinter as ctk
+from .scrollbar_tool_frame import ScrollableToolFrame
 
 class ToolPanel:
     def __init__(self, editor):
         self.editor = editor
 
-        self.tool_frame = ctk.CTkFrame(editor.root, width=250)
+        self.tool_frame = ScrollableToolFrame(
+            editor.root, width=300,
+            corner_radius=15,
+            border_width=2,
+            border_color="#2b2b2b",
+            fg_color=("#f0f0f0", "#2b2b2b")
+        )
 
         self.debug_var = ctk.BooleanVar(value=False)
         self.grid_var = ctk.BooleanVar(value=False)
@@ -14,68 +21,54 @@ class ToolPanel:
 
     def pack_widget(self):
         self.tool_frame.pack(side="right", fill="y", padx=5, pady=5)
-        self.tool_frame.pack_propagate(False)
+        self.tool_frame.after_idle(self.tool_frame.check_scrollbar_visibility)
 
     def _create_widgets(self):
-        ctk.CTkLabel(self.tool_frame, text="Инструменты",
-                     font=ctk.CTkFont(size=16, weight="bold")).pack(pady=10)
+        inner = self.tool_frame.inner_frame
+
+        ctk.CTkLabel(inner, text="Инструменты",
+                     font=ctk.CTkFont(size=18, weight="bold"),
+                     text_color=("#1f6aa5", "#3b8ed0")).pack(pady=(15, 10))
 
         self.line_tool_btn = ctk.CTkButton(
-            self.tool_frame,
-            text="Отрезок",
-            command=self.select_line_tool,
-            height=40
+            inner, text="Отрезок", command=self.select_line_tool,
+            height=45, corner_radius=12, fg_color=("#3B8ED0", "#1f6aa5"),
+            hover_color=("#36719f", "#144870"), border_spacing=10,
+            font=ctk.CTkFont(size=13, weight="bold")
         )
-        self.line_tool_btn.pack(pady=5, padx=10)
+        self.line_tool_btn.pack(pady=10, padx=15)
 
         self.other_tool_btn = ctk.CTkButton(
-            self.tool_frame,
-            text="Другой инструмент",
-            command=self.select_other_tool,
-            height=40,
-            fg_color=("gray75", "gray25")
+            inner, text="Другой инструмент", command=self.select_other_tool,
+            height=45, corner_radius=12, fg_color=("#3B8ED0", "#1f6aa5"),
+            hover_color=("#36719f", "#144870"), border_spacing=10,
+            font=ctk.CTkFont(size=13, weight="bold")
         )
-        self.other_tool_btn.pack(pady=5, padx=10)
+        self.other_tool_btn.pack(pady=10, padx=15)
 
-        self.common_settings_frame = ctk.CTkFrame(self.tool_frame)
+        self.common_settings_frame = ctk.CTkFrame(inner)
         self.common_settings_frame.pack(fill="x", padx=10, pady=15)
 
         ctk.CTkLabel(self.common_settings_frame,
                      text="Общие настройки",
                      font=ctk.CTkFont(weight="bold")).pack(pady=5)
 
-        scale_frame = ctk.CTkFrame(self.common_settings_frame)
+        scale_frame = ctk.CTkFrame(self.common_settings_frame, fg_color="transparent")
         scale_frame.pack(fill="x", padx=10, pady=5)
 
-        self.zoom_out_btn = ctk.CTkButton(
-            scale_frame,
-            text="-",
-            width=40,
-            command=self.editor.canvas_widget.zoom_out
-        )
+        self.zoom_out_btn = ctk.CTkButton(scale_frame, text="-", width=40,
+                                          command=self.editor.canvas_widget.zoom_out)
         self.zoom_out_btn.pack(side="left", padx=5)
 
-        self.zoom_label = ctk.CTkLabel(
-            scale_frame,
-            text="Масштаб",
-            width=60
-        )
+        self.zoom_label = ctk.CTkLabel(scale_frame, text="Масштаб", width=60)
         self.zoom_label.pack(side="left", padx=5)
 
-        self.zoom_in_btn = ctk.CTkButton(
-            scale_frame,
-            text="+",
-            width=40,
-            command=self.editor.canvas_widget.zoom_in
-        )
+        self.zoom_in_btn = ctk.CTkButton(scale_frame, text="+", width=40,
+                                         command=self.editor.canvas_widget.zoom_in)
         self.zoom_in_btn.pack(side="left", padx=5)
 
-        self.reset_zoom_btn = ctk.CTkButton(
-            scale_frame,
-            text="X",
-            width=60,
-            command=self.editor.canvas_widget.reset_zoom
-        )
+        self.reset_zoom_btn = ctk.CTkButton(scale_frame, text="Сброс", width=60,
+                                            command=self.editor.canvas_widget.reset_zoom)
         self.reset_zoom_btn.pack(side="left", padx=5)
 
         self.grid_checkbox = ctk.CTkCheckBox(
@@ -83,30 +76,24 @@ class ToolPanel:
             text="Показать сетку",
             variable=self.grid_var,
             command=self.editor.canvas_widget.toggle_grid,
-            state="normal"
+            checkbox_width=20, checkbox_height=20, corner_radius=4,
+            border_width=2, fg_color="#3B8ED0", hover_color="#1f6aa5",
+            font=ctk.CTkFont(size=12)
         )
         self.grid_checkbox.pack(pady=5, padx=10)
 
         control_frame = ctk.CTkFrame(self.common_settings_frame)
         control_frame.pack(fill="x", padx=10, pady=10)
 
-        self.clear_btn = ctk.CTkButton(
-            control_frame,
-            text="Очистить холст",
-            command=self.editor.canvas_widget.clear_canvas,
-            state="normal"
-        )
+        self.clear_btn = ctk.CTkButton(control_frame, text="Очистить холст",
+                                       command=self.editor.canvas_widget.clear_canvas)
         self.clear_btn.pack(pady=5)
 
-        self.reset_view_btn = ctk.CTkButton(
-            control_frame,
-            text="Сброс вида",
-            command=self.editor.canvas_widget.reset_view,
-            state="normal"
-        )
+        self.reset_view_btn = ctk.CTkButton(control_frame, text="Сброс вида",
+                                            command=self.editor.canvas_widget.reset_view)
         self.reset_view_btn.pack(pady=5)
 
-        self.line_tool_frame = ctk.CTkFrame(self.tool_frame)
+        self.line_tool_frame = ctk.CTkFrame(inner)
         self.line_tool_frame.pack_forget()
 
         self.setup_line_tool_functionality()
@@ -131,7 +118,11 @@ class ToolPanel:
                 text=text,
                 variable=self.algorithm_var,
                 value=value,
-                command=self.on_algorithm_change
+                command=self.on_algorithm_change,
+                radiobutton_width=18, radiobutton_height=18,
+                corner_radius=5, border_width_checked=7,
+                fg_color="#3B8ED0", border_color="#3B8ED0",
+                font=ctk.CTkFont(size=12)
             )
             radio.pack(anchor="w", padx=20, pady=2)
 
@@ -158,43 +149,30 @@ class ToolPanel:
         step_controls = ctk.CTkFrame(step_frame)
         step_controls.pack(fill="x", pady=5)
 
-        self.first_btn = ctk.CTkButton(
-            step_controls,
-            text="<<",
-            width=35,
-            command=self.editor.canvas_widget.first_step,
-            state="disabled"
-        )
+        self.first_btn = ctk.CTkButton(step_controls, text="<<", width=40,
+                                       command=self.editor.canvas_widget.first_step,
+                                       state="disabled")
         self.first_btn.pack(side="left", padx=2)
 
-        self.prev_btn = ctk.CTkButton(
-            step_controls,
-            text="<",
-            width=35,
-            command=self.editor.canvas_widget.prev_step,
-            state="disabled"
-        )
+        self.prev_btn = ctk.CTkButton(step_controls, text="<", width=40,
+                                      command=self.editor.canvas_widget.prev_step,
+                                      state="disabled", corner_radius=20,
+                                      fg_color="gray30", hover_color="gray20")
         self.prev_btn.pack(side="left", padx=2)
 
         self.step_label = ctk.CTkLabel(step_controls, text="0/0", width=50)
         self.step_label.pack(side="left", padx=5)
 
-        self.next_btn = ctk.CTkButton(
-            step_controls,
-            text=">",
-            width=35,
-            command=self.editor.canvas_widget.next_step,
-            state="disabled"
-        )
+        self.next_btn = ctk.CTkButton(step_controls, text=">", width=40,
+                                      command=self.editor.canvas_widget.next_step,
+                                      state="disabled", corner_radius=20,
+                                      fg_color="gray30", hover_color="gray20")
         self.next_btn.pack(side="left", padx=2)
 
-        self.last_btn = ctk.CTkButton(
-            step_controls,
-            text=">>",
-            width=35,
-            command=self.editor.canvas_widget.last_step,
-            state="disabled"
-        )
+        self.last_btn = ctk.CTkButton(step_controls, text=">>", width=40,
+                                      command=self.editor.canvas_widget.last_step,
+                                      state="disabled", corner_radius=20,
+                                      fg_color="gray30", hover_color="gray20")
         self.last_btn.pack(side="left", padx=2)
 
         self.show_all_btn = ctk.CTkButton(

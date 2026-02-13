@@ -3,12 +3,22 @@ from tkinter import Menu, messagebox
 from widgets.tool_panel import ToolPanel
 from widgets.status_bar import StatusBar
 from widgets.canvas import CanvasWidget
+from splash_screen import SplashScreen
+
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("dark-blue")
+
+
 
 class GraphicsEditor:
     def __init__(self):
         self.root = ctk.CTk()
         self.root.title("Графический редактор")
         self.root.geometry("1200x800")
+
+        self.root.withdraw()
+        self.splash = SplashScreen(self.root)
+        self.splash.window.bind("<Destroy>", lambda e: self.after_splash())
 
         self.selected_algorithm = "DDA"
         self.debug_mode = False
@@ -46,6 +56,9 @@ class GraphicsEditor:
         self.tool_panel.pack_widget()
         self.status_bar.pack_widget()
         self.canvas_widget.pack_widget()
+
+    def after_splash(self):
+        self.root.deiconify()
 
     def create_menu(self):
         menu_bar = Menu(self.root)
