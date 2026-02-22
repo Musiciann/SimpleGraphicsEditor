@@ -16,6 +16,7 @@ class ToolPanel:
         self.debug_var = ctk.BooleanVar(value=False)
         self.grid_var = ctk.BooleanVar(value=False)
         self.algorithm_var = ctk.StringVar(value="DDA")
+        self.curve_type_var = ctk.StringVar(value="circle")
 
         self._create_widgets()
 
@@ -37,6 +38,14 @@ class ToolPanel:
             font=ctk.CTkFont(size=13, weight="bold")
         )
         self.line_tool_btn.pack(pady=10, padx=15)
+
+        self.curves_tool_btn = ctk.CTkButton(
+            inner, text="Кривые", command=self.select_curves_tool,
+            height=45, corner_radius=12, fg_color=("#3B8ED0", "#1f6aa5"),
+            hover_color=("#36719f", "#144870"), border_spacing=10,
+            font=ctk.CTkFont(size=13, weight="bold")
+        )
+        self.curves_tool_btn.pack(pady=10, padx=15)
 
         self.other_tool_btn = ctk.CTkButton(
             inner, text="Другой инструмент", command=self.select_other_tool,
@@ -95,8 +104,55 @@ class ToolPanel:
 
         self.line_tool_frame = ctk.CTkFrame(inner)
         self.line_tool_frame.pack_forget()
-
         self.setup_line_tool_functionality()
+
+        self.curves_tool_frame = ctk.CTkFrame(inner)
+        self.curves_tool_frame.pack_forget()
+        self.setup_curves_tool_functionality()
+
+    def _create_step_controls(self, parent):
+        step_frame = ctk.CTkFrame(parent)
+        step_frame.pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkLabel(step_frame, text="Пошаговый режим:").pack(anchor="w", pady=2)
+
+        step_controls = ctk.CTkFrame(step_frame)
+        step_controls.pack(fill="x", pady=5)
+
+        self.first_btn = ctk.CTkButton(step_controls, text="<<", width=40,
+                                       command=self.editor.canvas_widget.first_step,
+                                       state="disabled")
+        self.first_btn.pack(side="left", padx=2)
+
+        self.prev_btn = ctk.CTkButton(step_controls, text="<", width=40,
+                                      command=self.editor.canvas_widget.prev_step,
+                                      state="disabled", corner_radius=20,
+                                      fg_color="gray30", hover_color="gray20")
+        self.prev_btn.pack(side="left", padx=2)
+
+        self.step_label = ctk.CTkLabel(step_controls, text="0/0", width=50)
+        self.step_label.pack(side="left", padx=5)
+
+        self.next_btn = ctk.CTkButton(step_controls, text=">", width=40,
+                                      command=self.editor.canvas_widget.next_step,
+                                      state="disabled", corner_radius=20,
+                                      fg_color="gray30", hover_color="gray20")
+        self.next_btn.pack(side="left", padx=2)
+
+        self.last_btn = ctk.CTkButton(step_controls, text=">>", width=40,
+                                      command=self.editor.canvas_widget.last_step,
+                                      state="disabled", corner_radius=20,
+                                      fg_color="gray30", hover_color="gray20")
+        self.last_btn.pack(side="left", padx=2)
+
+        self.show_all_btn = ctk.CTkButton(
+            step_frame,
+            text="Показать все",
+            width=120,
+            command=self.editor.canvas_widget.toggle_show_all,
+            state="disabled"
+        )
+        self.show_all_btn.pack(pady=5)
 
     def setup_line_tool_functionality(self):
         for widget in self.line_tool_frame.winfo_children():
@@ -141,60 +197,87 @@ class ToolPanel:
         )
         self.debug_checkbox.pack(side="left", padx=5)
 
-        step_frame = ctk.CTkFrame(self.line_tool_frame)
-        step_frame.pack(fill="x", padx=10, pady=5)
+        self._create_step_controls(self.line_tool_frame)
 
-        ctk.CTkLabel(step_frame, text="Пошаговый режим:").pack(anchor="w", pady=2)
+    def setup_curves_tool_functionality(self):
+        for widget in self.curves_tool_frame.winfo_children():
+            widget.destroy()
 
-        step_controls = ctk.CTkFrame(step_frame)
-        step_controls.pack(fill="x", pady=5)
+        ctk.CTkLabel(self.curves_tool_frame, text="Тип кривой",
+                     font=ctk.CTkFont(weight="bold")).pack(pady=5)
 
-        self.first_btn = ctk.CTkButton(step_controls, text="<<", width=40,
-                                       command=self.editor.canvas_widget.first_step,
-                                       state="disabled")
-        self.first_btn.pack(side="left", padx=2)
+        curves_types = [
+            ("Окружность", "circle"),
+            ("Эллипс", "ellipse"),
+            ("Гипербола", "hyperbola"),
+            ("Парабола", "parabola")
+        ]
 
-        self.prev_btn = ctk.CTkButton(step_controls, text="<", width=40,
-                                      command=self.editor.canvas_widget.prev_step,
-                                      state="disabled", corner_radius=20,
-                                      fg_color="gray30", hover_color="gray20")
-        self.prev_btn.pack(side="left", padx=2)
+        for text, value in curves_types:
+            ctk.CTkRadioButton(
+                self.curves_tool_frame, text=text,
+                variable=self.curve_type_var, value=value,
+                command=self.on_curve_type_change,
+                font=ctk.CTkFont(size=12)
+            ).pack(anchor="w", padx=20, pady=2)
 
-        self.step_label = ctk.CTkLabel(step_controls, text="0/0", width=50)
-        self.step_label.pack(side="left", padx=5)
+        ctk.CTkLabel(self.curves_tool_frame,
+                     text="Режим отладки",
+                     font=ctk.CTkFont(weight="bold")).pack(pady=(15, 5))
 
-        self.next_btn = ctk.CTkButton(step_controls, text=">", width=40,
-                                      command=self.editor.canvas_widget.next_step,
-                                      state="disabled", corner_radius=20,
-                                      fg_color="gray30", hover_color="gray20")
-        self.next_btn.pack(side="left", padx=2)
+        debug_controls = ctk.CTkFrame(self.curves_tool_frame)
+        debug_controls.pack(fill="x", padx=10, pady=5)
 
-        self.last_btn = ctk.CTkButton(step_controls, text=">>", width=40,
-                                      command=self.editor.canvas_widget.last_step,
-                                      state="disabled", corner_radius=20,
-                                      fg_color="gray30", hover_color="gray20")
-        self.last_btn.pack(side="left", padx=2)
-
-        self.show_all_btn = ctk.CTkButton(
-            step_frame,
-            text="Показать все",
-            width=120,
-            command=self.editor.canvas_widget.toggle_show_all,
-            state="disabled"
+        self.debug_checkbox_curves = ctk.CTkCheckBox(
+            debug_controls,
+            text="Включить отладку",
+            variable=self.debug_var,
+            command=self.toggle_debug_mode
         )
-        self.show_all_btn.pack(pady=5)
+        self.debug_checkbox_curves.pack(side="left", padx=5)
+
+        self._create_step_controls(self.curves_tool_frame)
+
+        self.curves_info_label = ctk.CTkLabel(self.curves_tool_frame,
+                                              text="", justify="left")
+        self.curves_info_label.pack(pady=5, padx=10)
+
+        self.on_curve_type_change()
+
+    def on_curve_type_change(self):
+        self.editor.selected_curve_type = self.curve_type_var.get()
+
+        hints = {
+            "circle": "1. Центр (клик)\n2. Радиус (клик)",
+            "ellipse": "1. Центр (клик)\n2. Полуось a (клик)\n3. Полуось b (клик)",
+            "hyperbola": "1. Центр (клик)\n2. Полуось a (клик)\n3. Полуось b (клик)",
+            "parabola": "1. Вершина (клик)\n2. Параметр p (расст. по X)"
+        }
+        self.curves_info_label.configure(text=hints[self.editor.selected_curve_type])
 
     def select_line_tool(self):
         self.editor.current_tool = "line"
         self.line_tool_btn.configure(fg_color="#3B8ED0")
+        self.curves_tool_btn.configure(fg_color=("gray75", "gray25"))
         self.other_tool_btn.configure(fg_color=("gray75", "gray25"))
         self.line_tool_frame.pack(fill="x", padx=10, pady=10)
+        self.curves_tool_frame.pack_forget()
+
+    def select_curves_tool(self):
+        self.editor.current_tool = "curves"
+        self.curves_tool_btn.configure(fg_color="#3B8ED0")
+        self.line_tool_btn.configure(fg_color=("gray75", "gray25"))
+        self.other_tool_btn.configure(fg_color=("gray75", "gray25"))
+        self.curves_tool_frame.pack(fill="x", padx=10, pady=10)
+        self.line_tool_frame.pack_forget()
 
     def select_other_tool(self):
         self.editor.current_tool = "other"
-        self.line_tool_btn.configure(fg_color=("gray75", "gray25"))
         self.other_tool_btn.configure(fg_color="#3B8ED0")
+        self.line_tool_btn.configure(fg_color=("gray75", "gray25"))
+        self.curves_tool_btn.configure(fg_color=("gray75", "gray25"))
         self.line_tool_frame.pack_forget()
+        self.curves_tool_frame.pack_forget()
 
     def on_algorithm_change(self):
         self.editor.selected_algorithm = self.algorithm_var.get()

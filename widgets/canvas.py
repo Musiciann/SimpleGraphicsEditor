@@ -2,12 +2,14 @@ import customtkinter as ctk
 from tkinter import messagebox
 from .canvas_scale import CanvasScale
 from tools.line_tool import LineTool
+from tools.curves_tool import CurvesTool
 from file_options import FileOptions
 
 class CanvasWidget:
     def __init__(self, editor):
         self.editor = editor
         self.line_tool = LineTool(self)
+        self.curves_tool = CurvesTool(self)
         self.file_options = FileOptions(self)
 
         self.main_frame = None
@@ -103,7 +105,7 @@ class CanvasWidget:
         self.editor.view_center_x = self.editor.canvas_width // 2
         self.editor.view_center_y = self.editor.canvas_height // 2
 
-        self.canvas.bind("<Button-1>", self.line_tool.canvas_click)
+        self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.canvas.bind("<Motion>", self.show_coordinates)
         self.canvas.bind("<MouseWheel>", self.on_mouse_wheel)
 
@@ -124,6 +126,12 @@ class CanvasWidget:
 
         self.update_step_label()
         self.disable_step_buttons()
+
+    def on_canvas_click(self, event):
+        if self.editor.current_tool == "line":
+            self.line_tool.canvas_click(event)
+        elif self.editor.current_tool == "curves":
+            self.curves_tool.canvas_click(event)
 
     def draw_pixel_grid(self):
         if not self.editor.canvas_created:

@@ -19,8 +19,8 @@ class GraphicsEditor:
         self.root.withdraw()
         self.splash = SplashScreen(self.root)
         self.splash.window.bind("<Destroy>", lambda e: self.after_splash())
-
         self.selected_algorithm = "DDA"
+        self.selected_curve_type = "circle"
         self.debug_mode = False
         self.grid_visible = False
         self.start_point = None
@@ -141,7 +141,12 @@ class GraphicsEditor:
             "1. Алгоритм ЦДА (Digital Differential Analyzer)\n"
             "2. Алгоритм Брезенхема (целочисленный)\n"
             "3. Алгоритм Ву (с антиалиасингом)\n\n"
-            "Версия: 0.2.3"
+            "Реализовано построение кривых:\n"
+            "1. Окружность\n"
+            "2. Эллипс\n"
+            "3. Парабола\n"
+            "4. Гипербола\n\n"
+            "Версия: 0.3.1"
         )
 
     def run(self):

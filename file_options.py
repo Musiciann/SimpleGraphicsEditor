@@ -16,10 +16,7 @@ class FileOptions:
         if not filename:
             filename = filedialog.asksaveasfilename(
                 defaultextension=".json",
-                filetypes=[
-                    ("JSON файлы", "*.json"),
-                    ("Все файлы", "*.*")
-                ],
+                filetypes=[("JSON файлы", "*.json"), ("Все файлы", "*.*")],
                 title="Сохранить холст"
             )
 
@@ -36,12 +33,17 @@ class FileOptions:
 
             for line_info in self.editor.lines:
                 line_data = {
-                    'type': line_info['type'],
-                    'start': line_info['start'],
-                    'end': line_info['end'],
-                    'algorithm': line_info['algorithm'],
+                    'type': line_info.get('type', 'line'),
+                    'algorithm': line_info.get('algorithm'),
                     'pixels': line_info['pixels']
                 }
+
+                if 'params' in line_info:
+                    line_data['params'] = line_info['params']
+                elif 'start' in line_info:
+                    line_data['start'] = line_info['start']
+                    line_data['end'] = line_info['end']
+
                 save_data['lines'].append(line_data)
 
             for point_info in self.editor.points:
@@ -66,10 +68,7 @@ class FileOptions:
     def load_canvas(self, filename=None):
         if not filename:
             filename = filedialog.askopenfilename(
-                filetypes=[
-                    ("JSON файлы", "*.json"),
-                    ("Все файлы", "*.*")
-                ],
+                filetypes=[("JSON файлы", "*.json"), ("Все файлы", "*.*")],
                 title="Открыть холст"
             )
 
@@ -95,12 +94,19 @@ class FileOptions:
             for line_data in load_data['lines']:
                 line_info = {
                     'type': line_data['type'],
-                    'start': tuple(line_data['start']),
-                    'end': tuple(line_data['end']),
-                    'algorithm': line_data['algorithm'],
                     'pixels': line_data['pixels'],
                     'pixel_ids': []
                 }
+
+                if 'params' in line_data:
+                    line_info['params'] = line_data['params']
+                if 'start' in line_data:
+                    line_info['start'] = tuple(line_data['start'])
+                if 'end' in line_data:
+                    line_info['end'] = tuple(line_data['end'])
+                if 'algorithm' in line_data:
+                    line_info['algorithm'] = line_data['algorithm']
+
                 self.editor.lines.append(line_info)
 
             for point_data in load_data['points']:
