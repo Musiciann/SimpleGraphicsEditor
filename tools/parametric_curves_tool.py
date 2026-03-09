@@ -1,4 +1,4 @@
-from matrix_utils import hermite_coeffs, bezier_coeffs, bspline_coeffs, eval_poly
+from algorithms.matrix_utils import hermite_coeffs, bezier_coeffs, bspline_coeffs, eval_poly
 
 class ParametricCurvesTool:
     MODE_HERMITE = "hermite"

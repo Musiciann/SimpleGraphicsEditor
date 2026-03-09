@@ -3,7 +3,9 @@ from tkinter import Menu, messagebox
 from widgets.tool_panel import ToolPanel
 from widgets.status_bar import StatusBar
 from widgets.canvas import CanvasWidget
-from splash_screen import SplashScreen
+from widgets.splash_screen import SplashScreen
+from widgets.threed_panel import ThreeDPanel
+from widgets.threed_canvas import ThreeDCanvas
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
@@ -46,7 +48,12 @@ class GraphicsEditor:
         self.canvas_width = 800
         self.canvas_height = 600
 
+        self.mode = "2d"  # "2d" или "3d"
+
         self.canvas_widget = CanvasWidget(self)
+        self.threed_canvas = ThreeDCanvas(self)
+        self.threed_panel = ThreeDPanel(self)
+
         self.create_menu()
 
         self.tool_panel = ToolPanel(self)
@@ -58,6 +65,11 @@ class GraphicsEditor:
 
         self.spline_tool = self.canvas_widget.spline_tool
 
+        self.threed_canvas.pack_widget()  # упаковываем, но скрываем
+        self.threed_canvas.hide()
+        self.threed_panel.pack_widget()
+        self.threed_panel.hide()
+
     def after_splash(self):
         self.root.deiconify()
 
@@ -68,14 +80,37 @@ class GraphicsEditor:
         file_menu = Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="Файл", menu=file_menu)
         file_menu.add_command(label="Новый холст", command=self.create_new_canvas_dialog)
-        file_menu.add_command(label="Открыть", command= self.canvas_widget.load_canvas)
+        file_menu.add_command(label="Открыть", command=self.canvas_widget.load_canvas)
         file_menu.add_command(label="Сохранить", command=self.canvas_widget.save_canvas)
         file_menu.add_separator()
         file_menu.add_command(label="Выход", command=self.root.quit)
 
+        mode_menu = Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="Режим", menu=mode_menu)
+        mode_menu.add_command(label="2D редактор", command=self.switch_to_2d)
+        mode_menu.add_command(label="3D редактор", command=self.switch_to_3d)
+
         help_menu = Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="Помощь", menu=help_menu)
         help_menu.add_command(label="О программе", command=self.show_about)
+
+    def switch_to_2d(self):
+        if self.mode == "2d":
+            return
+        self.mode = "2d"
+        self.threed_panel.hide()
+        self.threed_canvas.hide()
+        self.tool_panel.show()
+        self.canvas_widget.show()
+
+    def switch_to_3d(self):
+        if self.mode == "3d":
+            return
+        self.mode = "3d"
+        self.tool_panel.hide()
+        self.canvas_widget.hide()
+        self.threed_panel.show()
+        self.threed_canvas.show()
 
     def create_new_canvas_dialog(self):
         dialog = ctk.CTkToplevel(self.root)
@@ -151,7 +186,8 @@ class GraphicsEditor:
             "1. Кривая Эрмита\n"
             "2. Кривая Безье\n"
             "3. B-сплайн\n\n"
-            "Версия: 0.4.0"
+            "3D редактор с матричными преобразованиями (управление с клавиатуры).\n"
+            "Версия: 0.5.0"
         )
 
     def run(self):

@@ -4,7 +4,7 @@ from .canvas_scale import CanvasScale
 from tools.line_tool import LineTool
 from tools.curves_tool import CurvesTool
 from tools.parametric_curves_tool import ParametricCurvesTool
-from file_options import FileOptions
+from file_options.file_options_2d import FileOptions
 
 class CanvasWidget:
     def __init__(self, editor):
@@ -50,6 +50,16 @@ class CanvasWidget:
     def pack_widget(self):
         self.main_frame = ctk.CTkFrame(self.editor.root)
         self.main_frame.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+
+    def hide(self):
+        if self.main_frame:
+            self.main_frame.pack_forget()
+
+    def show(self):
+        if self.main_frame:
+            self.main_frame.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        else:
+            self.pack_widget()
 
     def create_canvas_area(self):
         if self.main_frame:

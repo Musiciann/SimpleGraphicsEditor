@@ -24,6 +24,12 @@ class ToolPanel:
         self.tool_frame.pack(side="right", fill="y", padx=5, pady=5)
         self.tool_frame.after_idle(self.tool_frame.check_scrollbar_visibility)
 
+    def hide(self):
+        self.tool_frame.pack_forget()
+
+    def show(self):
+        self.pack_widget()
+
     def _create_widgets(self):
         inner = self.tool_frame.inner_frame
 

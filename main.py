@@ -1,4 +1,4 @@
-from editor import GraphicsEditor
+from editors.editor import GraphicsEditor
 
 if __name__ == "__main__":
     app = GraphicsEditor()

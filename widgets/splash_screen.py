@@ -22,7 +22,7 @@ class SplashScreen:
         main_frame = ctk.CTkFrame(self.window, fg_color="transparent")
         main_frame.pack(expand=True, fill="both", padx=20, pady=20)
 
-        image_path = self.find_image("assets/temp_logo.png")
+        image_path = self.find_image("../assets/temp_logo.png")
         if image_path and os.path.exists(image_path):
             pil_image = Image.open(image_path)
             pil_image = pil_image.resize((150, 150), Image.Resampling.LANCZOS)
@@ -43,7 +43,7 @@ class SplashScreen:
 
         version_label = ctk.CTkLabel(
             main_frame,
-            text="Версия 0.3.1",
+            text="Версия 0.5.0",
             font=ctk.CTkFont(size=12),
             text_color=("gray40", "gray60")
         )
