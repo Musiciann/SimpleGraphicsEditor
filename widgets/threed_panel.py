@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
+from .constants import PRIMARY_BLUE, PRIMARY_BLUE_DARK, PRIMARY_BLUE_HOVER, PRIMARY_BLUE_HOVER_DARK
 
 class ThreeDPanel:
     def __init__(self, editor):
@@ -8,8 +9,8 @@ class ThreeDPanel:
             editor.root, width=300,
             corner_radius=15,
             border_width=2,
-            border_color="#2b2b2b",
-            fg_color=("#f0f0f0", "#2b2b2b")
+            border_color=("#4a4a4a", "#2b2b2b"),
+            fg_color=("#2b2b2b", "#1e1e1e")
         )
         self.create_widgets()
 
@@ -19,7 +20,7 @@ class ThreeDPanel:
 
         ctk.CTkLabel(inner, text="3D Редактор",
                      font=ctk.CTkFont(size=18, weight="bold"),
-                     text_color=("#1f6aa5", "#3b8ed0")).pack(pady=(15, 10))
+                     text_color=("#3a7eb6", "#4a8ec6")).pack(pady=(15, 10))
 
         self.new_btn = ctk.CTkButton(
             inner,
@@ -27,8 +28,8 @@ class ThreeDPanel:
             command=self.new_object_dialog,
             height=60,
             font=ctk.CTkFont(size=14, weight="bold"),
-            fg_color=("#3B8ED0", "#1f6aa5"),
-            hover_color=("#36719f", "#144870")
+            fg_color=(PRIMARY_BLUE, PRIMARY_BLUE_DARK),
+            hover_color=(PRIMARY_BLUE_HOVER, PRIMARY_BLUE_HOVER_DARK)
         )
         self.new_btn.pack(pady=10, fill="x")
 
@@ -63,7 +64,7 @@ class ThreeDPanel:
             text=instruction,
             justify="left",
             font=ctk.CTkFont(size=12),
-            text_color=("gray20", "gray80")
+            text_color=("gray70", "gray90")
         )
         instr_label.pack(pady=10, fill="x")
 
@@ -74,7 +75,9 @@ class ThreeDPanel:
             btn_frame,
             text="Загрузить",
             command=self.load_from_file,
-            height=40
+            height=40,
+            fg_color=(PRIMARY_BLUE, PRIMARY_BLUE_DARK),
+            hover_color=(PRIMARY_BLUE_HOVER, PRIMARY_BLUE_HOVER_DARK)
         )
         self.load_btn.pack(side="left", padx=5, expand=True, fill="x")
 
@@ -82,7 +85,9 @@ class ThreeDPanel:
             btn_frame,
             text="Сохранить",
             command=self.save_to_file,
-            height=40
+            height=40,
+            fg_color=(PRIMARY_BLUE, PRIMARY_BLUE_DARK),
+            hover_color=(PRIMARY_BLUE_HOVER, PRIMARY_BLUE_HOVER_DARK)
         )
         self.save_btn.pack(side="left", padx=5, expand=True, fill="x")
 
@@ -111,6 +116,7 @@ class ThreeDPanel:
         dialog.geometry("600x500")
         dialog.transient(self.editor.root)
         dialog.grab_set()
+        dialog.configure(fg_color=("#2b2b2b", "#1e1e1e"))
 
         ctk.CTkLabel(dialog, text="Вершины (x y z), каждая на новой строке:",
                      font=ctk.CTkFont(size=12)).pack(anchor="w", padx=10, pady=(10,0))
@@ -146,7 +152,9 @@ class ThreeDPanel:
 
         btn_frame = ctk.CTkFrame(dialog)
         btn_frame.pack(pady=20)
-        ctk.CTkButton(btn_frame, text="Создать", command=create).pack(side="left", padx=10)
+        ctk.CTkButton(btn_frame, text="Создать", command=create,
+                     fg_color=(PRIMARY_BLUE, PRIMARY_BLUE_DARK),
+                     hover_color=(PRIMARY_BLUE_HOVER, PRIMARY_BLUE_HOVER_DARK)).pack(side="left", padx=10)
         ctk.CTkButton(btn_frame, text="Отмена", command=dialog.destroy).pack(side="left", padx=10)
 
     def load_from_file(self):

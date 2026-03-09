@@ -79,9 +79,11 @@ class CanvasWidget:
         self.main_frame = ctk.CTkFrame(self.editor.root)
         self.main_frame.pack(side="left", fill="both", expand=True, padx=5, pady=5)
 
-        self.canvas_frame = ctk.CTkFrame(self.main_frame, corner_radius=15,
+        self.canvas_frame = ctk.CTkFrame(
+            self.main_frame,
+            corner_radius=15,
             border_width=2,
-            border_color=("gray70", "gray25"),
+            border_color=("#4a4a4a", "#2b2b2b"),
             fg_color="transparent"
         )
         self.canvas_frame.pack(expand=True)

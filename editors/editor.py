@@ -17,9 +17,14 @@ class GraphicsEditor:
         self.root.title("Графический редактор")
         self.root.geometry("1200x800")
 
+        # Настройка внешнего вида корневого окна
+        self.root.configure(fg_color=("#2b2b2b", "#1e1e1e"))
+
         self.root.withdraw()
         self.splash = SplashScreen(self.root)
         self.splash.window.bind("<Destroy>", lambda e: self.after_splash())
+
+        # Переменные состояния
         self.selected_algorithm = "DDA"
         self.selected_curve_type = "circle"
         self.debug_mode = False
@@ -48,7 +53,7 @@ class GraphicsEditor:
         self.canvas_width = 800
         self.canvas_height = 600
 
-        self.mode = "2d"  # "2d" или "3d"
+        self.mode = "2d"
 
         self.canvas_widget = CanvasWidget(self)
         self.threed_canvas = ThreeDCanvas(self)
@@ -65,7 +70,7 @@ class GraphicsEditor:
 
         self.spline_tool = self.canvas_widget.spline_tool
 
-        self.threed_canvas.pack_widget()  # упаковываем, но скрываем
+        self.threed_canvas.pack_widget()
         self.threed_canvas.hide()
         self.threed_panel.pack_widget()
         self.threed_panel.hide()
@@ -119,6 +124,9 @@ class GraphicsEditor:
         dialog.transient(self.root)
         dialog.grab_set()
 
+        # Стиль диалога
+        dialog.configure(fg_color=("#2b2b2b", "#1e1e1e"))
+
         ctk.CTkLabel(dialog, text="Размер холста",
                      font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
 
@@ -166,7 +174,9 @@ class GraphicsEditor:
         btn_frame = ctk.CTkFrame(dialog)
         btn_frame.pack(pady=20)
 
-        ctk.CTkButton(btn_frame, text="Создать", command=create).pack(side="left", padx=10)
+        ctk.CTkButton(btn_frame, text="Создать", command=create,
+                     fg_color=("#3a7eb6", "#1f5380"),
+                     hover_color=("#4a8ec6", "#2a6390")).pack(side="left", padx=10)
         ctk.CTkButton(btn_frame, text="Отмена", command=dialog.destroy).pack(side="left", padx=10)
 
     def show_about(self):
@@ -174,8 +184,8 @@ class GraphicsEditor:
             "О программе",
             "Графический редактор\n\n"
             "Реализованы алгоритмы построения отрезков:\n"
-            "1. Алгоритм ЦДА (Digital Differential Analyzer)\n"
-            "2. Алгоритм Брезенхема (целочисленный)\n"
+            "1. Алгоритм ЦДА\n"
+            "2. Алгоритм Брезенхема\n"
             "3. Алгоритм Ву (с антиалиасингом)\n\n"
             "Реализовано построение кривых:\n"
             "1. Окружность\n"
@@ -187,7 +197,8 @@ class GraphicsEditor:
             "2. Кривая Безье\n"
             "3. B-сплайн\n\n"
             "3D редактор с матричными преобразованиями (управление с клавиатуры).\n"
-            "Версия: 0.5.0"
+            "Современный стиль на базе customtkinter.\n"
+            "Версия: 0.6.0"
         )
 
     def run(self):

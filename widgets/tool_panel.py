@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from .scrollbar_tool_frame import ScrollableToolFrame
+from .constants import PRIMARY_BLUE, PRIMARY_BLUE_DARK, PRIMARY_BLUE_HOVER, PRIMARY_BLUE_HOVER_DARK
 
 class ToolPanel:
     def __init__(self, editor):
@@ -9,8 +10,8 @@ class ToolPanel:
             editor.root, width=300,
             corner_radius=15,
             border_width=2,
-            border_color="#2b2b2b",
-            fg_color=("#f0f0f0", "#2b2b2b")
+            border_color=("#4a4a4a", "#2b2b2b"),
+            fg_color=("#2b2b2b", "#1e1e1e")
         )
 
         self.debug_var = ctk.BooleanVar(value=False)
@@ -35,41 +36,30 @@ class ToolPanel:
 
         ctk.CTkLabel(inner, text="Инструменты",
                      font=ctk.CTkFont(size=18, weight="bold"),
-                     text_color=("#1f6aa5", "#3b8ed0")).pack(pady=(15, 10))
+                     text_color=("#3a7eb6", "#4a8ec6")).pack(pady=(15, 10))
 
-        self.line_tool_btn = ctk.CTkButton(
-            inner, text="Отрезок", command=self.select_line_tool,
-            height=45, corner_radius=12, fg_color=("#3B8ED0", "#1f6aa5"),
-            hover_color=("#36719f", "#144870"), border_spacing=10,
-            font=ctk.CTkFont(size=13, weight="bold")
-        )
+        btn_style = {
+            "height": 45,
+            "corner_radius": 12,
+            "fg_color": (PRIMARY_BLUE, PRIMARY_BLUE_DARK),
+            "hover_color": (PRIMARY_BLUE_HOVER, PRIMARY_BLUE_HOVER_DARK),
+            "border_spacing": 10,
+            "font": ctk.CTkFont(size=13, weight="bold")
+        }
+
+        self.line_tool_btn = ctk.CTkButton(inner, text="Отрезок", command=self.select_line_tool, **btn_style)
         self.line_tool_btn.pack(pady=10, padx=15)
 
-        self.curves_tool_btn = ctk.CTkButton(
-            inner, text="Кривые", command=self.select_curves_tool,
-            height=45, corner_radius=12, fg_color=("#3B8ED0", "#1f6aa5"),
-            hover_color=("#36719f", "#144870"), border_spacing=10,
-            font=ctk.CTkFont(size=13, weight="bold")
-        )
+        self.curves_tool_btn = ctk.CTkButton(inner, text="Кривые", command=self.select_curves_tool, **btn_style)
         self.curves_tool_btn.pack(pady=10, padx=15)
 
-        self.spline_tool_btn = ctk.CTkButton(
-            inner, text="Параметрические кривые", command=self.select_spline_tool,
-            height=45, corner_radius=12, fg_color=("#3B8ED0", "#1f6aa5"),
-            hover_color=("#36719f", "#144870"), border_spacing=10,
-            font=ctk.CTkFont(size=13, weight="bold")
-        )
+        self.spline_tool_btn = ctk.CTkButton(inner, text="Параметрические кривые", command=self.select_spline_tool, **btn_style)
         self.spline_tool_btn.pack(pady=10, padx=15)
 
-        self.other_tool_btn = ctk.CTkButton(
-            inner, text="Другой инструмент", command=self.select_other_tool,
-            height=45, corner_radius=12, fg_color=("#3B8ED0", "#1f6aa5"),
-            hover_color=("#36719f", "#144870"), border_spacing=10,
-            font=ctk.CTkFont(size=13, weight="bold")
-        )
+        self.other_tool_btn = ctk.CTkButton(inner, text="Другой инструмент", command=self.select_other_tool, **btn_style)
         self.other_tool_btn.pack(pady=10, padx=15)
 
-        self.common_settings_frame = ctk.CTkFrame(inner)
+        self.common_settings_frame = ctk.CTkFrame(inner, fg_color="transparent")
         self.common_settings_frame.pack(fill="x", padx=10, pady=15)
 
         ctk.CTkLabel(self.common_settings_frame,
@@ -100,7 +90,7 @@ class ToolPanel:
             variable=self.grid_var,
             command=self.editor.canvas_widget.toggle_grid,
             checkbox_width=20, checkbox_height=20, corner_radius=4,
-            border_width=2, fg_color="#3B8ED0", hover_color="#1f6aa5",
+            border_width=2, fg_color=PRIMARY_BLUE, hover_color=PRIMARY_BLUE_DARK,
             font=ctk.CTkFont(size=12)
         )
         self.grid_checkbox.pack(pady=5, padx=10)
@@ -259,7 +249,7 @@ class ToolPanel:
                 command=self.on_algorithm_change,
                 radiobutton_width=18, radiobutton_height=18,
                 corner_radius=5, border_width_checked=7,
-                fg_color="#3B8ED0", border_color="#3B8ED0",
+                fg_color=PRIMARY_BLUE, border_color=PRIMARY_BLUE,
                 font=ctk.CTkFont(size=12)
             )
             radio.pack(anchor="w", padx=20, pady=2)
@@ -339,56 +329,37 @@ class ToolPanel:
 
     def select_line_tool(self):
         self.editor.current_tool = "line"
-
-        self.line_tool_btn.configure(fg_color="#3B8ED0")
-        self.curves_tool_btn.configure(fg_color=("gray75", "gray25"))
-        self.other_tool_btn.configure(fg_color=("gray75", "gray25"))
-        self.spline_tool_btn.configure(fg_color=("gray75", "gray25"))
-
+        self._highlight_button(self.line_tool_btn)
         self.line_tool_frame.pack(fill="x", padx=10, pady=10)
-
         self.curves_tool_frame.pack_forget()
         self.spline_tool_frame.pack_forget()
 
     def select_curves_tool(self):
         self.editor.current_tool = "curves"
-
-        self.curves_tool_btn.configure(fg_color="#3B8ED0")
-        self.line_tool_btn.configure(fg_color=("gray75", "gray25"))
-        self.other_tool_btn.configure(fg_color=("gray75", "gray25"))
-        self.spline_tool_btn.configure(fg_color=("gray75", "gray25"))
-
+        self._highlight_button(self.curves_tool_btn)
         self.curves_tool_frame.pack(fill="x", padx=10, pady=10)
-
         self.line_tool_frame.pack_forget()
         self.spline_tool_frame.pack_forget()
 
     def select_spline_tool(self):
         self.editor.current_tool = "spline"
-
-        self.spline_tool_btn.configure(fg_color="#3B8ED0")
-        self.line_tool_btn.configure(fg_color=("gray75", "gray25"))
-        self.curves_tool_btn.configure(fg_color=("gray75", "gray25"))
-        self.other_tool_btn.configure(fg_color=("gray75", "gray25"))
-
+        self._highlight_button(self.spline_tool_btn)
         self.spline_tool_frame.pack(fill="x", padx=10, pady=10)
-
         self.line_tool_frame.pack_forget()
         self.curves_tool_frame.pack_forget()
-
         self.editor.spline_tool.reset_state()
 
     def select_other_tool(self):
         self.editor.current_tool = "other"
-
-        self.other_tool_btn.configure(fg_color="#3B8ED0")
-        self.line_tool_btn.configure(fg_color=("gray75", "gray25"))
-        self.curves_tool_btn.configure(fg_color=("gray75", "gray25"))
-        self.spline_tool_btn.configure(fg_color=("gray75", "gray25"))
-
+        self._highlight_button(self.other_tool_btn)
         self.line_tool_frame.pack_forget()
         self.curves_tool_frame.pack_forget()
         self.spline_tool_frame.pack_forget()
+
+    def _highlight_button(self, active_btn):
+        for btn in [self.line_tool_btn, self.curves_tool_btn, self.spline_tool_btn, self.other_tool_btn]:
+            btn.configure(fg_color=(PRIMARY_BLUE, PRIMARY_BLUE_DARK))
+        active_btn.configure(fg_color=(PRIMARY_BLUE_HOVER, PRIMARY_BLUE_HOVER_DARK))
 
     def on_algorithm_change(self):
         self.editor.selected_algorithm = self.algorithm_var.get()

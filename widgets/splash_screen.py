@@ -3,14 +3,12 @@ from PIL import Image
 import os
 
 class SplashScreen:
-
     def __init__(self, parent):
         self.parent = parent
         self.window = ctk.CTkToplevel(parent)
         self.window.overrideredirect(True)
         self.window.attributes("-topmost", True)
-
-        self.window.configure(fg_color=("#f0f0f0", "#2b2b2b"))
+        self.window.configure(fg_color=("#2b2b2b", "#1e1e1e"))
 
         width, height = 500, 300
         screen_width = self.window.winfo_screenwidth()
@@ -22,7 +20,7 @@ class SplashScreen:
         main_frame = ctk.CTkFrame(self.window, fg_color="transparent")
         main_frame.pack(expand=True, fill="both", padx=20, pady=20)
 
-        image_path = self.find_image("../assets/temp_logo.png")
+        image_path = self.find_image("assets/temp_logo.png")
         if image_path and os.path.exists(image_path):
             pil_image = Image.open(image_path)
             pil_image = pil_image.resize((150, 150), Image.Resampling.LANCZOS)
@@ -37,15 +35,15 @@ class SplashScreen:
             main_frame,
             text="Добро пожаловать в\nГрафический редактор",
             font=ctk.CTkFont(size=24, weight="bold"),
-            text_color=("#1f6aa5", "#3b8ed0")
+            text_color=("#3a7eb6", "#4a8ec6")
         )
         welcome_label.pack(pady=(0, 10))
 
         version_label = ctk.CTkLabel(
             main_frame,
-            text="Версия 0.5.0",
+            text="Версия 0.6.0",
             font=ctk.CTkFont(size=12),
-            text_color=("gray40", "gray60")
+            text_color=("gray60", "gray80")
         )
         version_label.pack(pady=(0, 5))
 
@@ -53,7 +51,7 @@ class SplashScreen:
             main_frame,
             text="Загрузка...",
             font=ctk.CTkFont(size=11, slant="italic"),
-            text_color=("gray50", "gray70")
+            text_color=("gray70", "gray90")
         )
         info_label.pack()
 
