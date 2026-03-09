@@ -47,6 +47,14 @@ class ToolPanel:
         )
         self.curves_tool_btn.pack(pady=10, padx=15)
 
+        self.spline_tool_btn = ctk.CTkButton(
+            inner, text="Параметрические кривые", command=self.select_spline_tool,
+            height=45, corner_radius=12, fg_color=("#3B8ED0", "#1f6aa5"),
+            hover_color=("#36719f", "#144870"), border_spacing=10,
+            font=ctk.CTkFont(size=13, weight="bold")
+        )
+        self.spline_tool_btn.pack(pady=10, padx=15)
+
         self.other_tool_btn = ctk.CTkButton(
             inner, text="Другой инструмент", command=self.select_other_tool,
             height=45, corner_radius=12, fg_color=("#3B8ED0", "#1f6aa5"),
@@ -110,6 +118,10 @@ class ToolPanel:
         self.curves_tool_frame.pack_forget()
         self.setup_curves_tool_functionality()
 
+        self.spline_tool_frame = ctk.CTkFrame(inner)
+        self.spline_tool_frame.pack_forget()
+        self.setup_spline_tool_functionality()
+
     def _create_step_controls(self, parent):
         step_frame = ctk.CTkFrame(parent)
         step_frame.pack(fill="x", padx=10, pady=5)
@@ -153,6 +165,70 @@ class ToolPanel:
             state="disabled"
         )
         self.show_all_btn.pack(pady=5)
+
+    def setup_spline_tool_functionality(self):
+        for widget in self.spline_tool_frame.winfo_children():
+            widget.destroy()
+
+        ctk.CTkLabel(self.spline_tool_frame, text="Тип кривой",
+                     font=ctk.CTkFont(weight="bold")).pack(pady=5)
+
+        self.spline_mode_var = ctk.StringVar(value="bezier")
+        modes = [
+            ("Эрмит", "hermite"),
+            ("Безье", "bezier"),
+            ("B-сплайн", "bspline")
+        ]
+        for text, value in modes:
+            ctk.CTkRadioButton(
+                self.spline_tool_frame, text=text,
+                variable=self.spline_mode_var, value=value,
+                command=self.on_spline_mode_change,
+                font=ctk.CTkFont(size=12)
+            ).pack(anchor="w", padx=20, pady=2)
+
+        ctk.CTkLabel(self.spline_tool_frame, text="Режим редактирования",
+                     font=ctk.CTkFont(weight="bold")).pack(pady=(15, 5))
+
+        self.edit_var = ctk.BooleanVar(value=False)
+        self.edit_checkbox = ctk.CTkCheckBox(
+            self.spline_tool_frame,
+            text="Редактировать точки",
+            variable=self.edit_var,
+            command=self.on_edit_toggled
+        )
+        self.edit_checkbox.pack(pady=5, padx=10)
+
+        self.bspline_closed_var = ctk.BooleanVar(value=False)
+        self.bspline_closed_check = ctk.CTkCheckBox(
+            self.spline_tool_frame,
+            text="Замкнутый B-сплайн",
+            variable=self.bspline_closed_var,
+            command=self.on_bspline_closed_change
+        )
+        self.bspline_closed_check.pack(pady=5, padx=10)
+        self.bspline_closed_check.pack_forget()
+
+        self.spline_info_label = ctk.CTkLabel(
+            self.spline_tool_frame,
+            text="Кликайте для задания точек",
+            justify="left"
+        )
+        self.spline_info_label.pack(pady=5, padx=10)
+
+    def on_edit_toggled(self):
+        self.editor.spline_tool.toggle_edit_mode(self.edit_var.get())
+
+    def on_spline_mode_change(self):
+        mode = self.spline_mode_var.get()
+        self.editor.spline_tool.set_mode(mode)
+        if mode == "bspline":
+            self.bspline_closed_check.pack(pady=5, padx=10)
+        else:
+            self.bspline_closed_check.pack_forget()
+
+    def on_bspline_closed_change(self):
+        self.editor.spline_tool.set_closed(self.bspline_closed_var.get())
 
     def setup_line_tool_functionality(self):
         for widget in self.line_tool_frame.winfo_children():
@@ -257,27 +333,56 @@ class ToolPanel:
 
     def select_line_tool(self):
         self.editor.current_tool = "line"
+
         self.line_tool_btn.configure(fg_color="#3B8ED0")
         self.curves_tool_btn.configure(fg_color=("gray75", "gray25"))
         self.other_tool_btn.configure(fg_color=("gray75", "gray25"))
+        self.spline_tool_btn.configure(fg_color=("gray75", "gray25"))
+
         self.line_tool_frame.pack(fill="x", padx=10, pady=10)
+
         self.curves_tool_frame.pack_forget()
+        self.spline_tool_frame.pack_forget()
 
     def select_curves_tool(self):
         self.editor.current_tool = "curves"
+
         self.curves_tool_btn.configure(fg_color="#3B8ED0")
         self.line_tool_btn.configure(fg_color=("gray75", "gray25"))
         self.other_tool_btn.configure(fg_color=("gray75", "gray25"))
+        self.spline_tool_btn.configure(fg_color=("gray75", "gray25"))
+
         self.curves_tool_frame.pack(fill="x", padx=10, pady=10)
+
         self.line_tool_frame.pack_forget()
+        self.spline_tool_frame.pack_forget()
+
+    def select_spline_tool(self):
+        self.editor.current_tool = "spline"
+
+        self.spline_tool_btn.configure(fg_color="#3B8ED0")
+        self.line_tool_btn.configure(fg_color=("gray75", "gray25"))
+        self.curves_tool_btn.configure(fg_color=("gray75", "gray25"))
+        self.other_tool_btn.configure(fg_color=("gray75", "gray25"))
+
+        self.spline_tool_frame.pack(fill="x", padx=10, pady=10)
+
+        self.line_tool_frame.pack_forget()
+        self.curves_tool_frame.pack_forget()
+
+        self.editor.spline_tool.reset_state()
 
     def select_other_tool(self):
         self.editor.current_tool = "other"
+
         self.other_tool_btn.configure(fg_color="#3B8ED0")
         self.line_tool_btn.configure(fg_color=("gray75", "gray25"))
         self.curves_tool_btn.configure(fg_color=("gray75", "gray25"))
+        self.spline_tool_btn.configure(fg_color=("gray75", "gray25"))
+
         self.line_tool_frame.pack_forget()
         self.curves_tool_frame.pack_forget()
+        self.spline_tool_frame.pack_forget()
 
     def on_algorithm_change(self):
         self.editor.selected_algorithm = self.algorithm_var.get()

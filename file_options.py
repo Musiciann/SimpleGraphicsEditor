@@ -34,9 +34,16 @@ class FileOptions:
             for line_info in self.editor.lines:
                 line_data = {
                     'type': line_info.get('type', 'line'),
-                    'algorithm': line_info.get('algorithm'),
                     'pixels': line_info['pixels']
                 }
+                if line_info['type'] == 'line':
+                    line_data['algorithm'] = line_info.get('algorithm')
+                    line_data['start'] = line_info.get('start')
+                    line_data['end'] = line_info.get('end')
+                elif line_info['type'] == 'parametric':
+                    line_data['subtype'] = line_info.get('subtype')
+                    line_data['points'] = line_info.get('points')
+                    line_data['closed'] = line_info.get('closed', False)
 
                 if 'params' in line_info:
                     line_data['params'] = line_info['params']
@@ -97,16 +104,14 @@ class FileOptions:
                     'pixels': line_data['pixels'],
                     'pixel_ids': []
                 }
-
-                if 'params' in line_data:
-                    line_info['params'] = line_data['params']
-                if 'start' in line_data:
-                    line_info['start'] = tuple(line_data['start'])
-                if 'end' in line_data:
-                    line_info['end'] = tuple(line_data['end'])
-                if 'algorithm' in line_data:
-                    line_info['algorithm'] = line_data['algorithm']
-
+                if line_data['type'] == 'line':
+                    line_info['start'] = tuple(line_data['start']) if line_data.get('start') else None
+                    line_info['end'] = tuple(line_data['end']) if line_data.get('end') else None
+                    line_info['algorithm'] = line_data.get('algorithm')
+                elif line_data['type'] == 'parametric':
+                    line_info['subtype'] = line_data.get('subtype')
+                    line_info['points'] = [tuple(pt) for pt in line_data.get('points', [])]
+                    line_info['closed'] = line_data.get('closed', False)
                 self.editor.lines.append(line_info)
 
             for point_data in load_data['points']:

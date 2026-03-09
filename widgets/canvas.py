@@ -3,6 +3,7 @@ from tkinter import messagebox
 from .canvas_scale import CanvasScale
 from tools.line_tool import LineTool
 from tools.curves_tool import CurvesTool
+from tools.parametric_curves_tool import ParametricCurvesTool
 from file_options import FileOptions
 
 class CanvasWidget:
@@ -10,6 +11,7 @@ class CanvasWidget:
         self.editor = editor
         self.line_tool = LineTool(self)
         self.curves_tool = CurvesTool(self)
+        self.spline_tool = ParametricCurvesTool(self)
         self.file_options = FileOptions(self)
 
         self.main_frame = None
@@ -116,6 +118,10 @@ class CanvasWidget:
         self.canvas.bind("<ButtonRelease-2>", self.stop_drag)
         self.canvas.bind("<ButtonRelease-3>", self.stop_drag)
 
+        self.canvas.bind("<Button-1>", self.on_canvas_click)
+        self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
+        self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
+
         self.editor.canvas_created = True
 
         self.editor.status_bar.update_status(
@@ -132,6 +138,16 @@ class CanvasWidget:
             self.line_tool.canvas_click(event)
         elif self.editor.current_tool == "curves":
             self.curves_tool.canvas_click(event)
+        elif self.editor.current_tool == "spline":
+            self.spline_tool.canvas_click(event)
+
+    def on_canvas_drag(self, event):
+        if self.editor.current_tool == "spline":
+            self.spline_tool.canvas_drag(event)
+
+    def on_canvas_release(self, event):
+        if self.editor.current_tool == "spline":
+            self.spline_tool.canvas_release(event)
 
     def draw_pixel_grid(self):
         if not self.editor.canvas_created:

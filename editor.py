@@ -9,7 +9,6 @@ ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
 
 
-
 class GraphicsEditor:
     def __init__(self):
         self.root = ctk.CTk()
@@ -56,6 +55,8 @@ class GraphicsEditor:
         self.tool_panel.pack_widget()
         self.status_bar.pack_widget()
         self.canvas_widget.pack_widget()
+
+        self.spline_tool = self.canvas_widget.spline_tool
 
     def after_splash(self):
         self.root.deiconify()
@@ -146,7 +147,11 @@ class GraphicsEditor:
             "2. Эллипс\n"
             "3. Парабола\n"
             "4. Гипербола\n\n"
-            "Версия: 0.3.1"
+            "Реализовано построение параметрических кривых:\n"
+            "1. Кривая Эрмита\n"
+            "2. Кривая Безье\n"
+            "3. B-сплайн\n\n"
+            "Версия: 0.4.0"
         )
 
     def run(self):
