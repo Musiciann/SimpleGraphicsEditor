@@ -10,7 +10,7 @@ class SplashScreen:
         self.window.attributes("-topmost", True)
         self.window.configure(fg_color=("#2b2b2b", "#1e1e1e"))
 
-        width, height = 500, 300
+        width, height = 800, 500
         screen_width = self.window.winfo_screenwidth()
         screen_height = self.window.winfo_screenheight()
         x = (screen_width - width) // 2
@@ -20,11 +20,11 @@ class SplashScreen:
         main_frame = ctk.CTkFrame(self.window, fg_color="transparent")
         main_frame.pack(expand=True, fill="both", padx=20, pady=20)
 
-        image_path = self.find_image("assets/temp_logo.png")
+        image_path = self.find_image("assets/pixel_logo.png")
         if image_path and os.path.exists(image_path):
             pil_image = Image.open(image_path)
-            pil_image = pil_image.resize((150, 150), Image.Resampling.LANCZOS)
-            self.logo_image = ctk.CTkImage(light_image=pil_image, dark_image=pil_image, size=(150, 150))
+            pil_image = pil_image.resize((800, 350), Image.Resampling.LANCZOS)
+            self.logo_image = ctk.CTkImage(light_image=pil_image, dark_image=pil_image, size=(800, 350))
             image_label = ctk.CTkLabel(main_frame, image=self.logo_image, text="")
             image_label.pack(pady=(0, 10))
         else:
@@ -41,7 +41,7 @@ class SplashScreen:
 
         version_label = ctk.CTkLabel(
             main_frame,
-            text="Версия 0.6.0",
+            text="Версия 0.6.1",
             font=ctk.CTkFont(size=12),
             text_color=("gray60", "gray80")
         )
@@ -55,7 +55,7 @@ class SplashScreen:
         )
         info_label.pack()
 
-        self.window.after(2000, self.fade_out)
+        self.window.after(3000, self.fade_out)
 
         main_frame.bind("<Button-1>", lambda e: self.close())
         for child in main_frame.winfo_children():
