@@ -17,14 +17,12 @@ class GraphicsEditor:
         self.root.title("Графический редактор")
         self.root.geometry("1200x800")
 
-        # Настройка внешнего вида корневого окна
         self.root.configure(fg_color=("#2b2b2b", "#1e1e1e"))
 
         self.root.withdraw()
         self.splash = SplashScreen(self.root)
         self.splash.window.bind("<Destroy>", lambda e: self.after_splash())
 
-        # Переменные состояния
         self.selected_algorithm = "DDA"
         self.selected_curve_type = "circle"
         self.debug_mode = False
@@ -48,6 +46,7 @@ class GraphicsEditor:
 
         self.lines = []
         self.points = []
+        self.polygons = []
         self.original_width = 800
         self.original_height = 600
         self.canvas_width = 800
@@ -95,6 +94,14 @@ class GraphicsEditor:
         mode_menu.add_command(label="2D редактор", command=self.switch_to_2d)
         mode_menu.add_command(label="3D редактор", command=self.switch_to_3d)
 
+        polygon_menu = Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="Полигоны", menu=polygon_menu)
+        polygon_menu.add_command(label="Проверить выпуклость", command=self.canvas_widget.check_polygon_convexity)
+        polygon_menu.add_command(label="Показать нормали", command=self.canvas_widget.show_internal_normals)
+        polygon_menu.add_command(label="Выпуклая оболочка (Грэхем)", command=self.canvas_widget.build_convex_hull_graham)
+        polygon_menu.add_command(label="Выпуклая оболочка (Джарвис)", command=self.canvas_widget.build_convex_hull_jarvis)
+        polygon_menu.add_command(label="Очистить полигоны", command=self.canvas_widget.clear_polygons)
+
         help_menu = Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="Помощь", menu=help_menu)
         help_menu.add_command(label="О программе", command=self.show_about)
@@ -124,7 +131,6 @@ class GraphicsEditor:
         dialog.transient(self.root)
         dialog.grab_set()
 
-        # Стиль диалога
         dialog.configure(fg_color=("#2b2b2b", "#1e1e1e"))
 
         ctk.CTkLabel(dialog, text="Размер холста",
@@ -196,9 +202,11 @@ class GraphicsEditor:
             "1. Кривая Эрмита\n"
             "2. Кривая Безье\n"
             "3. B-сплайн\n\n"
-            "3D редактор с матричными преобразованиями (управление с клавиатуры).\n"
-            "Современный стиль на базе customtkinter.\n"
-            "Версия: 0.6.1"
+            "3D редактор с матричными преобразованиями (управление с клавиатуры).\n\n"
+            "Добавлена поддержка полигонов: построение, проверка выпуклости,\n"
+            "внутренние нормали, выпуклые оболочки (Грэхем, Джарвис),\n"
+            "принадлежность точки полигону, пересечение отрезка с полигоном.\n\n"
+            "Версия: 0.7.0"
         )
 
     def run(self):

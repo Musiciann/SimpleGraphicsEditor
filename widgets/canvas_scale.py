@@ -1,5 +1,5 @@
 from tools import LineTool
-
+from algorithms.algorithms import bresenham_algorithm_pixels
 
 class CanvasScale:
 
@@ -193,6 +193,28 @@ class CanvasScale:
                         x1, y1, x2, y2,
                         fill=color, outline=color, tags=tag
                     )
+
+        self.canvas.delete("polygon_edge")
+        self.canvas.delete("normal")
+        for poly in self.editor.polygons:
+            vertices = poly['vertices']
+            if len(vertices) < 3:
+                continue
+            for i in range(len(vertices)):
+                p1 = vertices[i]
+                p2 = vertices[(i+1) % len(vertices)]
+                pixels = bresenham_algorithm_pixels(p1[0], p1[1], p2[0], p2[1])
+                for px, py in pixels:
+                    screen_x = self.canvas_to_screen_x(px)
+                    screen_y = self.canvas_to_screen_y(py)
+                    pixel_size = max(1, self.editor.scale_factor)
+                    self.canvas.create_rectangle(
+                        screen_x, screen_y,
+                        screen_x + pixel_size, screen_y + pixel_size,
+                        fill="black", outline="black", tags="polygon_edge"
+                    )
+
+        self.draw_current_polygon()
 
         if self.editor.debug_mode and self.editor.total_steps > 0:
             self.draw_debug_step()

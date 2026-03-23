@@ -10,7 +10,7 @@ class SplashScreen:
         self.window.attributes("-topmost", True)
         self.window.configure(fg_color=("#2b2b2b", "#1e1e1e"))
 
-        width, height = 800, 500
+        width, height = 800, 550
         screen_width = self.window.winfo_screenwidth()
         screen_height = self.window.winfo_screenheight()
         x = (screen_width - width) // 2
@@ -23,8 +23,8 @@ class SplashScreen:
         image_path = self.find_image("assets/pixel_logo.png")
         if image_path and os.path.exists(image_path):
             pil_image = Image.open(image_path)
-            pil_image = pil_image.resize((800, 350), Image.Resampling.LANCZOS)
-            self.logo_image = ctk.CTkImage(light_image=pil_image, dark_image=pil_image, size=(800, 350))
+            pil_image = pil_image.resize((800, 400), Image.Resampling.LANCZOS)
+            self.logo_image = ctk.CTkImage(light_image=pil_image, dark_image=pil_image, size=(800, 400))
             image_label = ctk.CTkLabel(main_frame, image=self.logo_image, text="")
             image_label.pack(pady=(0, 10))
         else:
@@ -41,7 +41,7 @@ class SplashScreen:
 
         version_label = ctk.CTkLabel(
             main_frame,
-            text="Версия 0.6.1",
+            text="Версия 0.7.0",
             font=ctk.CTkFont(size=12),
             text_color=("gray60", "gray80")
         )

@@ -1,10 +1,12 @@
 import customtkinter as ctk
 from tkinter import messagebox
+import math
 from .canvas_scale import CanvasScale
 from tools.line_tool import LineTool
 from tools.curves_tool import CurvesTool
 from tools.parametric_curves_tool import ParametricCurvesTool
 from file_options.file_options_2d import FileOptions
+from tools.polygon_tool import PolygonTool
 
 class CanvasWidget:
     def __init__(self, editor):
@@ -12,6 +14,7 @@ class CanvasWidget:
         self.line_tool = LineTool(self)
         self.curves_tool = CurvesTool(self)
         self.spline_tool = ParametricCurvesTool(self)
+        self.polygon_tool = PolygonTool(self)
         self.file_options = FileOptions(self)
 
         self.main_frame = None
@@ -19,6 +22,8 @@ class CanvasWidget:
         self.canvas = None
         self.scroll_frame = None
         self.scale_label = None
+
+        self.waiting_for_point = False
 
     def canvas_to_screen_x(self, canvas_x):
         return CanvasScale.canvas_to_screen_x(self, canvas_x)
@@ -66,6 +71,7 @@ class CanvasWidget:
             self.main_frame.destroy()
             self.editor.lines = []
             self.editor.points = []
+            self.editor.polygons = []
             self.editor.start_point = None
             self.editor.end_point = None
             self.editor.step_pixels = []
@@ -146,12 +152,17 @@ class CanvasWidget:
         self.disable_step_buttons()
 
     def on_canvas_click(self, event):
+        if self.waiting_for_point:
+            self.test_point_inside_polygon(event)
+            return
         if self.editor.current_tool == "line":
             self.line_tool.canvas_click(event)
         elif self.editor.current_tool == "curves":
             self.curves_tool.canvas_click(event)
         elif self.editor.current_tool == "spline":
             self.spline_tool.canvas_click(event)
+        elif self.editor.current_tool == "polygon":
+            self.polygon_tool.canvas_click(event)
 
     def on_canvas_drag(self, event):
         if self.editor.current_tool == "spline":
@@ -424,6 +435,7 @@ class CanvasWidget:
 
         self.editor.lines = []
         self.editor.points = []
+        self.editor.polygons = []
 
         if self.editor.grid_visible:
             self.draw_pixel_grid()
@@ -491,3 +503,136 @@ class CanvasWidget:
 
     def load_canvas(self, filename=None):
         return self.file_options.load_canvas(filename)
+
+    def finish_polygon(self):
+        self.polygon_tool.finish_polygon()
+
+    def clear_polygons(self):
+        for poly in self.editor.polygons:
+            for pid in poly.get('pixel_ids', []):
+                self.canvas.delete(pid)
+        self.editor.polygons = []
+        self.polygon_tool.clear_polygon_points()
+        self.editor.status_bar.update_status("Все полигоны удалены")
+        self.redraw_canvas()
+
+    def test_point_inside_polygon(self, event):
+        self.waiting_for_point = False
+        x = self.screen_to_canvas_x(event.x)
+        y = self.screen_to_canvas_y(event.y)
+        point = (x, y)
+        if not self.editor.polygons:
+            self.editor.status_bar.update_status("Нет полигонов для проверки")
+            return
+        poly = self.editor.polygons[-1]
+        inside = self.polygon_tool.point_in_polygon(point, poly['vertices'])
+        msg = f"Точка ({x}, {y}) {'внутри' if inside else 'снаружи'} полигона"
+        self.editor.status_bar.update_status(msg)
+        self.draw_intersection_point(x, y, "green" if inside else "red")
+
+    def draw_intersection_point(self, x, y, color):
+        screen_x = self.canvas_to_screen_x(x)
+        screen_y = self.canvas_to_screen_y(y)
+        r = 3
+        self.canvas.create_oval(
+            screen_x - r, screen_y - r,
+            screen_x + r, screen_y + r,
+            fill=color, outline=color, tags="intersection"
+        )
+
+    def build_convex_hull_graham(self):
+        self.build_convex_hull('graham')
+
+    def build_convex_hull_jarvis(self):
+        self.build_convex_hull('jarvis')
+
+    def build_convex_hull(self, algorithm='graham'):
+        if not self.editor.polygons:
+            self.editor.status_bar.update_status("Сначала создайте полигон")
+            return
+        poly = self.editor.polygons[-1]
+        points = poly['vertices']
+        if algorithm == 'graham':
+            hull = self.polygon_tool.graham_scan(points)
+        else:
+            hull = self.polygon_tool.jarvis_march(points)
+        if len(hull) < 3:
+            self.editor.status_bar.update_status("Не удалось построить выпуклую оболочку")
+            return
+        hull_info = {
+            'type': 'polygon',
+            'vertices': hull,
+            'convex': True,
+            'normals': [],
+            'pixel_ids': []
+        }
+        self.editor.polygons.append(hull_info)
+        self.polygon_tool.draw_polygon(hull_info)
+        self.editor.status_bar.update_status(f"Выпуклая оболочка построена ({algorithm})")
+        self.redraw_canvas()
+
+    def check_polygon_convexity(self):
+        if not self.editor.polygons:
+            self.editor.status_bar.update_status("Нет полигонов")
+            return
+        poly = self.editor.polygons[-1]
+        convex = self.polygon_tool.compute_convexity(poly)
+        self.editor.status_bar.update_status(f"Полигон {'выпуклый' if convex else 'вогнутый'}")
+
+    def show_internal_normals(self):
+        if not self.editor.polygons:
+            return
+        poly = self.editor.polygons[-1]
+        if not self.polygon_tool.compute_convexity(poly):
+            self.editor.status_bar.update_status("Внутренние нормали можно вычислить только для выпуклого полигона")
+            return
+        normals = self.polygon_tool.compute_internal_normals(poly)
+        vertices = poly['vertices']
+        for i, (nx, ny) in enumerate(normals):
+            p1 = vertices[i]
+            p2 = vertices[(i+1) % len(vertices)]
+            mx = (p1[0] + p2[0]) / 2
+            my = (p1[1] + p2[1]) / 2
+            screen_mx = self.canvas_to_screen_x(mx)
+            screen_my = self.canvas_to_screen_y(my)
+            scale = 15 / self.editor.scale_factor
+            end_x = screen_mx + nx * scale
+            end_y = screen_my + ny * scale
+            self.canvas.create_line(screen_mx, screen_my, end_x, end_y, fill="red", width=2, tags="normal")
+            angle = math.atan2(ny, nx)
+            head_len = 5
+            head_angle = math.pi/6
+            x1 = end_x - head_len * math.cos(angle + head_angle)
+            y1 = end_y - head_len * math.sin(angle + head_angle)
+            x2 = end_x - head_len * math.cos(angle - head_angle)
+            y2 = end_y - head_len * math.sin(angle - head_angle)
+            self.canvas.create_line(end_x, end_y, x1, y1, fill="red", tags="normal")
+            self.canvas.create_line(end_x, end_y, x2, y2, fill="red", tags="normal")
+        self.editor.status_bar.update_status("Внутренние нормали отображены (красные стрелки)")
+
+    def check_last_line_intersection(self):
+        line_info = None
+        for l in reversed(self.editor.lines):
+            if l.get('type') == 'line':
+                line_info = l
+                break
+        if not line_info:
+            self.editor.status_bar.update_status("Нет нарисованных отрезков")
+            return
+        if not self.editor.polygons:
+            self.editor.status_bar.update_status("Нет полигонов")
+            return
+        seg = (line_info['start'], line_info['end'])
+        poly = self.editor.polygons[-1]
+        intersections = self.polygon_tool.segment_intersect_polygon(seg, poly['vertices'])
+        if intersections:
+            msg = "Точки пересечения: " + ", ".join(f"({int(x)},{int(y)})" for x,y in intersections)
+            self.editor.status_bar.update_status(msg)
+            for x,y in intersections:
+                self.draw_intersection_point(x, y, "orange")
+        else:
+            self.editor.status_bar.update_status("Пересечений нет")
+
+    def draw_current_polygon(self):
+        if self.editor.current_tool == "polygon" and self.polygon_tool.points:
+            self.polygon_tool.draw_current_polygon()

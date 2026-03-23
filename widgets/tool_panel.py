@@ -56,6 +56,9 @@ class ToolPanel:
         self.spline_tool_btn = ctk.CTkButton(inner, text="Параметрические кривые", command=self.select_spline_tool, **btn_style)
         self.spline_tool_btn.pack(pady=10, padx=15)
 
+        self.polygon_tool_btn = ctk.CTkButton(inner, text="Полигон", command=self.select_polygon_tool, **btn_style)
+        self.polygon_tool_btn.pack(pady=10, padx=15)
+
         self.other_tool_btn = ctk.CTkButton(inner, text="Другой инструмент", command=self.select_other_tool, **btn_style)
         self.other_tool_btn.pack(pady=10, padx=15)
 
@@ -117,6 +120,54 @@ class ToolPanel:
         self.spline_tool_frame = ctk.CTkFrame(inner)
         self.spline_tool_frame.pack_forget()
         self.setup_spline_tool_functionality()
+
+        self.polygon_tool_frame = ctk.CTkFrame(inner)
+        self.polygon_tool_frame.pack_forget()
+        self.setup_polygon_tool_functionality()
+
+    def setup_polygon_tool_functionality(self):
+        for widget in self.polygon_tool_frame.winfo_children():
+            widget.destroy()
+
+        self.finish_polygon_btn = ctk.CTkButton(self.polygon_tool_frame, text="Завершить полигон",
+                                                command=self.editor.canvas_widget.finish_polygon,
+                                                height=40)
+        self.finish_polygon_btn.pack(pady=5, padx=10, fill="x")
+
+        self.clear_polygons_btn = ctk.CTkButton(self.polygon_tool_frame, text="Удалить все полигоны",
+                                                command=self.editor.canvas_widget.clear_polygons,
+                                                height=40, fg_color="gray30")
+        self.clear_polygons_btn.pack(pady=5, padx=10, fill="x")
+
+        hull_frame = ctk.CTkFrame(self.polygon_tool_frame)
+        hull_frame.pack(pady=5, padx=10, fill="x")
+        ctk.CTkLabel(hull_frame, text="Выпуклая оболочка", font=ctk.CTkFont(weight="bold")).pack(anchor="w")
+        self.hull_graham_btn = ctk.CTkButton(hull_frame, text="Грэхем",
+                                             command=self.editor.canvas_widget.build_convex_hull_graham)
+        self.hull_graham_btn.pack(side="left", padx=2, pady=2, expand=True, fill="x")
+        self.hull_jarvis_btn = ctk.CTkButton(hull_frame, text="Джарвис",
+                                             command=self.editor.canvas_widget.build_convex_hull_jarvis)
+        self.hull_jarvis_btn.pack(side="left", padx=2, pady=2, expand=True, fill="x")
+
+        self.convexity_btn = ctk.CTkButton(self.polygon_tool_frame, text="Проверить выпуклость",
+                                           command=self.editor.canvas_widget.check_polygon_convexity)
+        self.convexity_btn.pack(pady=5, padx=10, fill="x")
+
+        self.normals_btn = ctk.CTkButton(self.polygon_tool_frame, text="Показать внутренние нормали",
+                                         command=self.editor.canvas_widget.show_internal_normals)
+        self.normals_btn.pack(pady=5, padx=10, fill="x")
+
+        self.pip_btn = ctk.CTkButton(self.polygon_tool_frame, text="Точка в полигоне",
+                                     command=self.start_point_in_polygon)
+        self.pip_btn.pack(pady=5, padx=10, fill="x")
+
+        self.seg_inter_btn = ctk.CTkButton(self.polygon_tool_frame, text="Пересечение последнего отрезка",
+                                           command=self.editor.canvas_widget.check_last_line_intersection)
+        self.seg_inter_btn.pack(pady=5, padx=10, fill="x")
+
+    def start_point_in_polygon(self):
+        self.editor.canvas_widget.waiting_for_point = True
+        self.editor.status_bar.update_status("Кликните на холсте, чтобы проверить принадлежность точки полигону")
 
     def _create_step_controls(self, parent):
         step_frame = ctk.CTkFrame(parent)
@@ -333,6 +384,7 @@ class ToolPanel:
         self.line_tool_frame.pack(fill="x", padx=10, pady=10)
         self.curves_tool_frame.pack_forget()
         self.spline_tool_frame.pack_forget()
+        self.polygon_tool_frame.pack_forget()
 
     def select_curves_tool(self):
         self.editor.current_tool = "curves"
@@ -340,6 +392,7 @@ class ToolPanel:
         self.curves_tool_frame.pack(fill="x", padx=10, pady=10)
         self.line_tool_frame.pack_forget()
         self.spline_tool_frame.pack_forget()
+        self.polygon_tool_frame.pack_forget()
 
     def select_spline_tool(self):
         self.editor.current_tool = "spline"
@@ -347,7 +400,16 @@ class ToolPanel:
         self.spline_tool_frame.pack(fill="x", padx=10, pady=10)
         self.line_tool_frame.pack_forget()
         self.curves_tool_frame.pack_forget()
+        self.polygon_tool_frame.pack_forget()
         self.editor.spline_tool.reset_state()
+
+    def select_polygon_tool(self):
+        self.editor.current_tool = "polygon"
+        self._highlight_button(self.polygon_tool_btn)
+        self.polygon_tool_frame.pack(fill="x", padx=10, pady=10)
+        self.line_tool_frame.pack_forget()
+        self.curves_tool_frame.pack_forget()
+        self.spline_tool_frame.pack_forget()
 
     def select_other_tool(self):
         self.editor.current_tool = "other"
@@ -355,9 +417,10 @@ class ToolPanel:
         self.line_tool_frame.pack_forget()
         self.curves_tool_frame.pack_forget()
         self.spline_tool_frame.pack_forget()
+        self.polygon_tool_frame.pack_forget()
 
     def _highlight_button(self, active_btn):
-        for btn in [self.line_tool_btn, self.curves_tool_btn, self.spline_tool_btn, self.other_tool_btn]:
+        for btn in [self.line_tool_btn, self.curves_tool_btn, self.spline_tool_btn, self.polygon_tool_btn, self.other_tool_btn]:
             btn.configure(fg_color=(PRIMARY_BLUE, PRIMARY_BLUE_DARK))
         active_btn.configure(fg_color=(PRIMARY_BLUE_HOVER, PRIMARY_BLUE_HOVER_DARK))
 
