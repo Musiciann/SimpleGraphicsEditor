@@ -2,14 +2,13 @@ import json
 import os
 from tkinter import filedialog, messagebox
 
-
 class FileOptions:
     def __init__(self, canvas_widget):
         self.canvas_widget = canvas_widget
         self.editor = canvas_widget.editor
 
     def save_canvas(self, filename=None):
-        if not self.editor.canvas_created or not self.editor.lines:
+        if not self.editor.canvas_created or (not self.editor.lines and not self.editor.polygons and not self.editor.points):
             messagebox.showwarning("Внимание", "Нечего сохранять - холст пуст")
             return False
 
@@ -28,7 +27,8 @@ class FileOptions:
                 'canvas_width': self.editor.original_width,
                 'canvas_height': self.editor.original_height,
                 'lines': [],
-                'points': []
+                'points': [],
+                'polygons': []
             }
 
             for line_info in self.editor.lines:
@@ -62,6 +62,16 @@ class FileOptions:
                 }
                 save_data['points'].append(point_data)
 
+            for poly in self.editor.polygons:
+                poly_data = {
+                    'vertices': poly['vertices'],
+                }
+                if 'fill_color' in poly:
+                    poly_data['fill_color'] = poly['fill_color']
+                if 'fill_algorithm' in poly:
+                    poly_data['fill_algorithm'] = poly['fill_algorithm']
+                save_data['polygons'].append(poly_data)
+
             with open(filename, 'w', encoding='utf-8') as f:
                 json.dump(save_data, f, ensure_ascii=False, indent=2)
 
@@ -93,8 +103,7 @@ class FileOptions:
 
             self.editor.lines = []
             self.editor.points = []
-            self.editor.start_point = None
-            self.editor.end_point = None
+            self.editor.polygons = []
 
             self.canvas_widget.create_canvas_area()
 
@@ -124,7 +133,24 @@ class FileOptions:
                 }
                 self.editor.points.append(point_info)
 
+            for poly_data in load_data.get('polygons', []):
+                poly_info = {
+                    'type': 'polygon',
+                    'vertices': poly_data['vertices'],
+                    'convex': None,
+                    'normals': [],
+                    'pixel_ids': []
+                }
+                if 'fill_color' in poly_data:
+                    poly_info['fill_color'] = poly_data['fill_color']
+                    poly_info['fill_pixels'] = poly_data.get('fill_pixels', [])
+                    poly_info['fill_algorithm'] = poly_data.get('fill_algorithm')
+                self.editor.polygons.append(poly_info)
+
             self.canvas_widget.redraw_canvas()
+
+            for poly in self.editor.polygons:
+                self.canvas_widget.fill_tool.restore_fill(poly)
 
             messagebox.showinfo("Успех", f"Холст загружен из файла:\n{filename}")
             return True

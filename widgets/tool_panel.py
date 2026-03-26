@@ -59,6 +59,9 @@ class ToolPanel:
         self.polygon_tool_btn = ctk.CTkButton(inner, text="Полигон", command=self.select_polygon_tool, **btn_style)
         self.polygon_tool_btn.pack(pady=10, padx=15)
 
+        self.fill_tool_btn = ctk.CTkButton(inner, text="Заливка", command=self.select_fill_tool, **btn_style)
+        self.fill_tool_btn.pack(pady=10, padx=15)
+
         self.other_tool_btn = ctk.CTkButton(inner, text="Другой инструмент", command=self.select_other_tool, **btn_style)
         self.other_tool_btn.pack(pady=10, padx=15)
 
@@ -124,6 +127,139 @@ class ToolPanel:
         self.polygon_tool_frame = ctk.CTkFrame(inner)
         self.polygon_tool_frame.pack_forget()
         self.setup_polygon_tool_functionality()
+
+        self.fill_frame = ctk.CTkFrame(inner)
+        self.fill_frame.pack_forget()
+        self.setup_fill_functionality()
+
+    def setup_fill_functionality(self):
+        for widget in self.fill_frame.winfo_children():
+            widget.destroy()
+
+        ctk.CTkLabel(self.fill_frame, text="Заливка полигонов", font=ctk.CTkFont(weight="bold")).pack(pady=5)
+
+        self.fill_algorithm_var = ctk.StringVar(value="scanline")
+        algos = [
+            ("Растровая развертка", "scanline"),
+            ("С активными рёбрами", "scanline_active"),
+            ("Затравка (простая)", "seed_simple"),
+            ("Затравка (построчная)", "seed_scanline")
+        ]
+        for text, val in algos:
+            ctk.CTkRadioButton(
+                self.fill_frame, text=text, variable=self.fill_algorithm_var, value=val,
+                command=self.on_fill_algorithm_change
+            ).pack(anchor="w", padx=20, pady=2)
+
+        color_frame = ctk.CTkFrame(self.fill_frame)
+        color_frame.pack(pady=5, padx=10, fill="x")
+        ctk.CTkLabel(color_frame, text="Цвет:").pack(side="left", padx=5)
+        self.fill_color_var = ctk.StringVar(value="lightgray")
+        self.fill_color_picker = ctk.CTkOptionMenu(
+            color_frame, values=["lightgray", "red", "green", "blue", "yellow", "cyan", "magenta", "orange"],
+            variable=self.fill_color_var, command=self.on_fill_color_change
+        )
+        self.fill_color_picker.pack(side="left", padx=5, expand=True, fill="x")
+
+        self.fill_btn = ctk.CTkButton(self.fill_frame, text="Заполнить", command=self.fill_polygon)
+        self.fill_btn.pack(pady=5, padx=10, fill="x")
+
+        self.clear_fill_btn = ctk.CTkButton(self.fill_frame, text="Очистить заливку", command=self.clear_fill,
+                                            fg_color="gray30")
+        self.clear_fill_btn.pack(pady=5, padx=10, fill="x")
+
+        self.fill_debug_var = ctk.BooleanVar(value=False)
+        self.fill_debug_check = ctk.CTkCheckBox(
+            self.fill_frame, text="Режим отладки", variable=self.fill_debug_var,
+            command=self.toggle_fill_debug
+        )
+        self.fill_debug_check.pack(pady=5, padx=10, anchor="w")
+
+        self.fill_step_frame = ctk.CTkFrame(self.fill_frame)
+        self.fill_step_frame.pack_forget()
+
+        step_row1 = ctk.CTkFrame(self.fill_step_frame, fg_color="transparent")
+        step_row1.pack(pady=2)
+        self.fill_first_btn = ctk.CTkButton(step_row1, text="<<", width=40,
+                                            command=self.editor.canvas_widget.fill_first_step, state="disabled")
+        self.fill_first_btn.pack(side="left", padx=2)
+        self.fill_prev_btn = ctk.CTkButton(step_row1, text="<", width=40,
+                                           command=self.editor.canvas_widget.fill_prev_step, state="disabled")
+        self.fill_prev_btn.pack(side="left", padx=2)
+        self.fill_step_label = ctk.CTkLabel(step_row1, text="0/0", width=50)
+        self.fill_step_label.pack(side="left", padx=5)
+        self.fill_next_btn = ctk.CTkButton(step_row1, text=">", width=40,
+                                           command=self.editor.canvas_widget.fill_next_step, state="disabled")
+        self.fill_next_btn.pack(side="left", padx=2)
+        self.fill_last_btn = ctk.CTkButton(step_row1, text=">>", width=40,
+                                           command=self.editor.canvas_widget.fill_last_step, state="disabled")
+        self.fill_last_btn.pack(side="left", padx=2)
+
+        step_row2 = ctk.CTkFrame(self.fill_step_frame, fg_color="transparent")
+        step_row2.pack(pady=2)
+        self.fill_show_all_btn = ctk.CTkButton(step_row2, text="Показать всё", width=120,
+                                               command=self.editor.canvas_widget.fill_toggle_show_all, state="disabled")
+        self.fill_show_all_btn.pack(side="left", padx=2)
+
+    def on_fill_algorithm_change(self):
+        pass
+
+    def on_fill_color_change(self, color):
+        self.editor.canvas_widget.set_fill_color(color)
+
+    def fill_polygon(self):
+        algorithm = self.fill_algorithm_var.get()
+        self.editor.canvas_widget.fill_polygon(algorithm)
+
+    def clear_fill(self):
+        if self.editor.polygons:
+            for poly in self.editor.polygons:
+                if 'fill_pixels' in poly:
+                    del poly['fill_pixels']
+                    if 'fill_color' in poly:
+                        del poly['fill_color']
+                    if 'fill_algorithm' in poly:
+                        del poly['fill_algorithm']
+        self.editor.canvas_widget.fill_tool.clear_fill()
+        self.editor.canvas_widget.redraw_canvas()
+        self.update_fill_step_buttons_state()
+
+    def toggle_fill_debug(self):
+        if self.fill_debug_var.get():
+            self.fill_step_frame.pack(pady=5, padx=10, fill="x")
+            self.update_fill_step_buttons_state()
+        else:
+            self.fill_step_frame.pack_forget()
+            self.editor.canvas_widget.fill_tool.show_all = True
+            self.editor.canvas_widget.fill_tool.update_fill_display()
+
+    def update_fill_step_buttons_state(self):
+        ft = self.editor.canvas_widget.fill_tool
+        total = ft.total_steps
+        current = ft.current_step
+        if total == 0:
+            self.fill_first_btn.configure(state="disabled")
+            self.fill_prev_btn.configure(state="disabled")
+            self.fill_next_btn.configure(state="disabled")
+            self.fill_last_btn.configure(state="disabled")
+            self.fill_show_all_btn.configure(state="disabled")
+            self.fill_step_label.configure(text="0/0")
+        else:
+            self.fill_first_btn.configure(state="normal" if current > 0 else "disabled")
+            self.fill_prev_btn.configure(state="normal" if current > 0 else "disabled")
+            self.fill_next_btn.configure(state="normal" if current < total - 1 else "disabled")
+            self.fill_last_btn.configure(state="normal" if current < total - 1 else "disabled")
+            self.fill_show_all_btn.configure(state="normal")
+            self.fill_step_label.configure(text=f"{current+1}/{total}")
+
+    def select_fill_tool(self):
+        self.editor.current_tool = "fill"
+        self._highlight_button(self.fill_tool_btn)
+        self.fill_frame.pack(fill="x", padx=10, pady=10)
+        self.line_tool_frame.pack_forget()
+        self.curves_tool_frame.pack_forget()
+        self.spline_tool_frame.pack_forget()
+        self.polygon_tool_frame.pack_forget()
 
     def setup_polygon_tool_functionality(self):
         for widget in self.polygon_tool_frame.winfo_children():
@@ -385,6 +521,7 @@ class ToolPanel:
         self.curves_tool_frame.pack_forget()
         self.spline_tool_frame.pack_forget()
         self.polygon_tool_frame.pack_forget()
+        self.fill_frame.pack_forget()
 
     def select_curves_tool(self):
         self.editor.current_tool = "curves"
@@ -393,6 +530,7 @@ class ToolPanel:
         self.line_tool_frame.pack_forget()
         self.spline_tool_frame.pack_forget()
         self.polygon_tool_frame.pack_forget()
+        self.fill_frame.pack_forget()
 
     def select_spline_tool(self):
         self.editor.current_tool = "spline"
@@ -401,6 +539,7 @@ class ToolPanel:
         self.line_tool_frame.pack_forget()
         self.curves_tool_frame.pack_forget()
         self.polygon_tool_frame.pack_forget()
+        self.fill_frame.pack_forget()
         self.editor.spline_tool.reset_state()
 
     def select_polygon_tool(self):
@@ -410,6 +549,7 @@ class ToolPanel:
         self.line_tool_frame.pack_forget()
         self.curves_tool_frame.pack_forget()
         self.spline_tool_frame.pack_forget()
+        self.fill_frame.pack_forget()
 
     def select_other_tool(self):
         self.editor.current_tool = "other"
@@ -418,9 +558,10 @@ class ToolPanel:
         self.curves_tool_frame.pack_forget()
         self.spline_tool_frame.pack_forget()
         self.polygon_tool_frame.pack_forget()
+        self.fill_frame.pack_forget()
 
     def _highlight_button(self, active_btn):
-        for btn in [self.line_tool_btn, self.curves_tool_btn, self.spline_tool_btn, self.polygon_tool_btn, self.other_tool_btn]:
+        for btn in [self.line_tool_btn, self.curves_tool_btn, self.spline_tool_btn, self.polygon_tool_btn, self.fill_tool_btn, self.other_tool_btn]:
             btn.configure(fg_color=(PRIMARY_BLUE, PRIMARY_BLUE_DARK))
         active_btn.configure(fg_color=(PRIMARY_BLUE_HOVER, PRIMARY_BLUE_HOVER_DARK))
 

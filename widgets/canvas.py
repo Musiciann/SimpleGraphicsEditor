@@ -7,6 +7,7 @@ from tools.curves_tool import CurvesTool
 from tools.parametric_curves_tool import ParametricCurvesTool
 from file_options.file_options_2d import FileOptions
 from tools.polygon_tool import PolygonTool
+from tools.fill_tool import FillTool
 
 class CanvasWidget:
     def __init__(self, editor):
@@ -15,6 +16,7 @@ class CanvasWidget:
         self.curves_tool = CurvesTool(self)
         self.spline_tool = ParametricCurvesTool(self)
         self.polygon_tool = PolygonTool(self)
+        self.fill_tool = FillTool(self)
         self.file_options = FileOptions(self)
 
         self.main_frame = None
@@ -636,3 +638,46 @@ class CanvasWidget:
     def draw_current_polygon(self):
         if self.editor.current_tool == "polygon" and self.polygon_tool.points:
             self.polygon_tool.draw_current_polygon()
+
+    def fill_polygon(self, algorithm):
+        if not self.editor.polygons:
+            self.editor.status_bar.update_status("Нет полигонов для заполнения")
+            return
+        poly = self.editor.polygons[-1]
+        self.fill_tool.fill_polygon(algorithm, poly)
+        if hasattr(self.editor, 'tool_panel'):
+            self.editor.tool_panel.update_fill_step_buttons_state()
+
+    def set_fill_color(self, color):
+        self.fill_tool.set_fill_color(color)
+        self.fill_tool.update_fill_display()
+
+    def clear_fill(self):
+        self.fill_tool.clear_fill()
+        if hasattr(self.editor, 'tool_panel'):
+            self.editor.tool_panel.update_fill_step_buttons_state()
+
+    def fill_first_step(self):
+        self.fill_tool.first_step()
+        if hasattr(self.editor, 'tool_panel'):
+            self.editor.tool_panel.update_fill_step_buttons_state()
+
+    def fill_prev_step(self):
+        self.fill_tool.prev_step()
+        if hasattr(self.editor, 'tool_panel'):
+            self.editor.tool_panel.update_fill_step_buttons_state()
+
+    def fill_next_step(self):
+        self.fill_tool.next_step()
+        if hasattr(self.editor, 'tool_panel'):
+            self.editor.tool_panel.update_fill_step_buttons_state()
+
+    def fill_last_step(self):
+        self.fill_tool.last_step()
+        if hasattr(self.editor, 'tool_panel'):
+            self.editor.tool_panel.update_fill_step_buttons_state()
+
+    def fill_toggle_show_all(self):
+        self.fill_tool.toggle_show_all()
+        if hasattr(self.editor, 'tool_panel'):
+            self.editor.tool_panel.update_fill_step_buttons_state()

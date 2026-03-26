@@ -102,6 +102,18 @@ class GraphicsEditor:
         polygon_menu.add_command(label="Выпуклая оболочка (Джарвис)", command=self.canvas_widget.build_convex_hull_jarvis)
         polygon_menu.add_command(label="Очистить полигоны", command=self.canvas_widget.clear_polygons)
 
+        fill_menu = Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="Заливка", menu=fill_menu)
+        fill_menu.add_command(label="Растровая развертка", command=lambda: self.canvas_widget.fill_polygon("scanline"))
+        fill_menu.add_command(label="С активными рёбрами",
+                              command=lambda: self.canvas_widget.fill_polygon("scanline_active"))
+        fill_menu.add_command(label="Затравка (простая)",
+                              command=lambda: self.canvas_widget.fill_polygon("seed_simple"))
+        fill_menu.add_command(label="Затравка (построчная)",
+                              command=lambda: self.canvas_widget.fill_polygon("seed_scanline"))
+        fill_menu.add_separator()
+        fill_menu.add_command(label="Очистить заливку", command=self.canvas_widget.clear_fill)
+
         help_menu = Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="Помощь", menu=help_menu)
         help_menu.add_command(label="О программе", command=self.show_about)
@@ -206,7 +218,9 @@ class GraphicsEditor:
             "Добавлена поддержка полигонов: построение, проверка выпуклости,\n"
             "внутренние нормали, выпуклые оболочки (Грэхем, Джарвис),\n"
             "принадлежность точки полигону, пересечение отрезка с полигоном.\n\n"
-            "Версия: 0.7.0"
+            "Добавлена возможность заливки полигонов разными цветами алгоритмами \n"
+            "затравки, растровой развёртки и по активным рёбрам\n\n"
+            "Версия: 0.8.1"
         )
 
     def run(self):

@@ -202,7 +202,7 @@ class CanvasScale:
                 continue
             for i in range(len(vertices)):
                 p1 = vertices[i]
-                p2 = vertices[(i+1) % len(vertices)]
+                p2 = vertices[(i + 1) % len(vertices)]
                 pixels = bresenham_algorithm_pixels(p1[0], p1[1], p2[0], p2[1])
                 for px, py in pixels:
                     screen_x = self.canvas_to_screen_x(px)
@@ -215,6 +215,19 @@ class CanvasScale:
                     )
 
         self.draw_current_polygon()
+
+        self.canvas.delete("fill_pixel")
+        for poly in self.editor.polygons:
+            if 'fill_pixels' in poly and poly['fill_pixels']:
+                for x, y in poly['fill_pixels']:
+                    screen_x = self.canvas_to_screen_x(x)
+                    screen_y = self.canvas_to_screen_y(y)
+                    pixel_size = max(1, self.editor.scale_factor)
+                    self.canvas.create_rectangle(
+                        screen_x, screen_y,
+                        screen_x + pixel_size, screen_y + pixel_size,
+                        fill=poly['fill_color'], outline=poly['fill_color'], tags="fill_pixel"
+                    )
 
         if self.editor.debug_mode and self.editor.total_steps > 0:
             self.draw_debug_step()
