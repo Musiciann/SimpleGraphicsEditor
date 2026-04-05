@@ -74,6 +74,12 @@ class GraphicsEditor:
         self.threed_panel.pack_widget()
         self.threed_panel.hide()
 
+        self.delaunay_points = []
+        self.delaunay_edges = []
+        self.voronoi_edges = []
+        self.show_delaunay = True
+        self.show_voronoi = True
+
     def after_splash(self):
         self.root.deiconify()
 

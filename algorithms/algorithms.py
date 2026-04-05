@@ -219,3 +219,166 @@ def rotate_pixels(pixels, angle, cx, cy):
         ry = tx * sin_a + ty * cos_a
         new_pixels.append((int(round(rx + cx)), int(round(ry + cy))))
     return new_pixels
+
+def circumcircle(ax, ay, bx, by, cx, cy):
+    d = 2 * (ax*(by - cy) + bx*(cy - ay) + cx*(ay - by))
+    if abs(d) < 1e-9:
+        return (0, 0, float('inf'))
+    ux = ((ax*ax + ay*ay)*(by - cy) + (bx*bx + by*by)*(cy - ay) + (cx*cx + cy*cy)*(ay - by)) / d
+    uy = ((ax*ax + ay*ay)*(cx - bx) + (bx*bx + by*by)*(ax - cx) + (cx*cx + cy*cy)*(bx - ax)) / d
+    dx = ax - ux
+    dy = ay - uy
+    return (ux, uy, dx*dx + dy*dy)
+
+def is_point_in_circumcircle(px, py, ax, ay, bx, by, cx, cy):
+
+    _, _, rad_sq = circumcircle(ax, ay, bx, by, cx, cy)
+    dx = px - ax
+    dy = py - ay
+
+    cx_, cy_, rad_sq = circumcircle(ax, ay, bx, by, cx, cy)
+    return (px - cx_)**2 + (py - cy_)**2 < rad_sq - 1e-9
+
+def delaunay_triangulation(points):
+
+    if len(points) < 3:
+        return []
+
+    min_x = min(p[0] for p in points)
+    min_y = min(p[1] for p in points)
+    max_x = max(p[0] for p in points)
+    max_y = max(p[1] for p in points)
+    dx = max_x - min_x
+    dy = max_y - min_y
+    margin = max(dx, dy) * 2
+    p1 = (min_x - margin, min_y - margin)
+    p2 = (min_x + 2*margin, min_y - margin)
+    p3 = (min_x + margin, min_y + 2*margin)
+
+    pts = points + [p1, p2, p3]
+    super_indices = (len(points), len(points)+1, len(points)+2)
+    triangles = [super_indices]
+    for i, p in enumerate(points):
+        bad_triangles = []
+        for tri in triangles:
+            a, b, c = tri
+            if is_point_in_circumcircle(p[0], p[1], pts[a][0], pts[a][1], pts[b][0], pts[b][1], pts[c][0], pts[c][1]):
+                bad_triangles.append(tri)
+
+        edge_count = {}
+        for tri in bad_triangles:
+            for edge in [(tri[0], tri[1]), (tri[1], tri[2]), (tri[2], tri[0])]:
+                e = tuple(sorted(edge))
+                edge_count[e] = edge_count.get(e, 0) + 1
+        boundary = [e for e, cnt in edge_count.items() if cnt == 1]
+
+        triangles = [t for t in triangles if t not in bad_triangles]
+
+        for e in boundary:
+            triangles.append((e[0], e[1], i))
+
+    result = []
+    for tri in triangles:
+        if not any(v in tri for v in super_indices):
+            result.append(tri)
+    return result
+
+def clip_line_to_rect(x1, y1, x2, y2, xmin, ymin, xmax, ymax):
+    INSIDE = 0
+    LEFT = 1
+    RIGHT = 2
+    BOTTOM = 4
+    TOP = 8
+    def compute_code(x, y):
+        code = INSIDE
+        if x < xmin: code |= LEFT
+        elif x > xmax: code |= RIGHT
+        if y < ymin: code |= BOTTOM
+        elif y > ymax: code |= TOP
+        return code
+    code1 = compute_code(x1, y1)
+    code2 = compute_code(x2, y2)
+    while True:
+        if (code1 | code2) == 0:
+            return (x1, y1, x2, y2)
+        if (code1 & code2) != 0:
+            return None
+        code_out = code1 if code1 != 0 else code2
+        x, y = 0, 0
+        if code_out & TOP:
+            x = x1 + (x2 - x1) * (ymax - y1) / (y2 - y1)
+            y = ymax
+        elif code_out & BOTTOM:
+            x = x1 + (x2 - x1) * (ymin - y1) / (y2 - y1)
+            y = ymin
+        elif code_out & RIGHT:
+            y = y1 + (y2 - y1) * (xmax - x1) / (x2 - x1)
+            x = xmax
+        elif code_out & LEFT:
+            y = y1 + (y2 - y1) * (xmin - x1) / (x2 - x1)
+            x = xmin
+        if code_out == code1:
+            x1, y1 = x, y
+            code1 = compute_code(x1, y1)
+        else:
+            x2, y2 = x, y
+            code2 = compute_code(x2, y2)
+
+def voronoi_from_delaunay(points, triangles, width, height):
+
+    circumcenters = []
+    for tri in triangles:
+        a, b, c = tri
+        p1 = points[a]
+        p2 = points[b]
+        p3 = points[c]
+        cx, cy, _ = circumcircle(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1])
+        circumcenters.append((cx, cy))
+
+    edge_to_tri = {}
+    for idx, tri in enumerate(triangles):
+        edges = [(tri[0], tri[1]), (tri[1], tri[2]), (tri[2], tri[0])]
+        for e in edges:
+            key = tuple(sorted(e))
+            edge_to_tri.setdefault(key, []).append(idx)
+
+    segments = []
+
+    for edge, tris in edge_to_tri.items():
+        if len(tris) == 2:
+            i1, i2 = tris
+            segments.append((circumcenters[i1], circumcenters[i2]))
+        elif len(tris) == 1:
+
+            tri_idx = tris[0]
+            tri = triangles[tri_idx]
+
+            edge_verts = set(edge)
+            for v in tri:
+                if v not in edge_verts:
+                    opposite = v
+                    break
+
+            pA = points[edge[0]]
+            pB = points[edge[1]]
+            mid = ((pA[0]+pB[0])/2, (pA[1]+pB[1])/2)
+            interior = points[opposite]
+            inward = (interior[0]-mid[0], interior[1]-mid[1])
+
+            edge_dir = (pB[0]-pA[0], pB[1]-pA[1])
+
+            normal = (edge_dir[1], -edge_dir[0])
+            if normal[0]*inward[0] + normal[1]*inward[1] > 0:
+                normal = (-normal[0], -normal[1])
+
+            length = math.hypot(normal[0], normal[1])
+            if length > 0:
+                normal = (normal[0]/length, normal[1]/length)
+            else:
+                normal = (1, 0)
+            C = circumcenters[tri_idx]
+            far = (C[0] + normal[0]*max(width, height)*2, C[1] + normal[1]*max(width, height)*2)
+            clipped = clip_line_to_rect(C[0], C[1], far[0], far[1], 0, 0, width, height)
+            if clipped:
+                segments.append(((clipped[0], clipped[1]), (clipped[2], clipped[3])))
+    return segments

@@ -165,6 +165,8 @@ class CanvasWidget:
             self.spline_tool.canvas_click(event)
         elif self.editor.current_tool == "polygon":
             self.polygon_tool.canvas_click(event)
+        elif self.editor.current_tool == "delaunay":
+            self.delaunay_tool_click(event)
 
     def on_canvas_drag(self, event):
         if self.editor.current_tool == "spline":
@@ -439,6 +441,13 @@ class CanvasWidget:
         self.editor.points = []
         self.editor.polygons = []
 
+        self.editor.delaunay_points = []
+        self.editor.delaunay_edges = []
+        self.editor.voronoi_edges = []
+        self.canvas.delete("delaunay_point")
+        self.canvas.delete("delaunay_edge")
+        self.canvas.delete("voronoi_edge")
+
         if self.editor.grid_visible:
             self.draw_pixel_grid()
 
@@ -681,3 +690,58 @@ class CanvasWidget:
         self.fill_tool.toggle_show_all()
         if hasattr(self.editor, 'tool_panel'):
             self.editor.tool_panel.update_fill_step_buttons_state()
+
+    def delaunay_tool_click(self, event):
+        x = self.screen_to_canvas_x(event.x)
+        y = self.screen_to_canvas_y(event.y)
+        if 0 <= x < self.editor.original_width and 0 <= y < self.editor.original_height:
+            self.editor.delaunay_points.append((x, y))
+            self.draw_delaunay_point(x, y)
+
+    def draw_delaunay_point(self, x, y):
+        screen_x = self.canvas_to_screen_x(x)
+        screen_y = self.canvas_to_screen_y(y)
+        pixel_size = max(1, self.editor.scale_factor)
+        self.canvas.create_rectangle(
+            screen_x, screen_y,
+            screen_x + pixel_size, screen_y + pixel_size,
+            fill="blue", outline="blue", tags="delaunay_point"
+        )
+
+    def clear_delaunay_points(self):
+        self.editor.delaunay_points = []
+        self.canvas.delete("delaunay_point")
+        self.editor.status_bar.update_status("Точки для триангуляции удалены")
+
+    def clear_delaunay_result(self):
+        self.editor.delaunay_edges = []
+        self.editor.voronoi_edges = []
+        self.canvas.delete("delaunay_edge")
+        self.canvas.delete("voronoi_edge")
+        self.editor.status_bar.update_status("Результаты триангуляции удалены")
+
+    def compute_delaunay_voronoi(self):
+        if len(self.editor.delaunay_points) < 3:
+            self.editor.status_bar.update_status("Нужно хотя бы 3 точки для триангуляции")
+            return
+        from algorithms.algorithms import delaunay_triangulation, voronoi_from_delaunay
+        points = self.editor.delaunay_points
+        triangles = delaunay_triangulation(points)
+        if not triangles:
+            self.editor.status_bar.update_status("Не удалось построить триангуляцию")
+            return
+
+        edges_set = set()
+        for tri in triangles:
+            for i in range(3):
+                a, b = tri[i], tri[(i + 1) % 3]
+                key = tuple(sorted((a, b)))
+                edges_set.add(key)
+        self.editor.delaunay_edges = [(points[a], points[b]) for (a, b) in edges_set]
+
+        width = self.editor.original_width
+        height = self.editor.original_height
+        self.editor.voronoi_edges = voronoi_from_delaunay(points, triangles, width, height)
+        self.redraw_canvas()
+        self.editor.status_bar.update_status(
+            f"Триангуляция: {len(triangles)} треугольников, {len(self.editor.voronoi_edges)} рёбер Вороного")

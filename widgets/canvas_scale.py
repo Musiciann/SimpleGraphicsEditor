@@ -214,6 +214,29 @@ class CanvasScale:
                         fill="black", outline="black", tags="polygon_edge"
                     )
 
+        if self.editor.show_delaunay and self.editor.delaunay_edges:
+            for (x1, y1), (x2, y2) in self.editor.delaunay_edges:
+                sx1 = self.canvas_to_screen_x(x1)
+                sy1 = self.canvas_to_screen_y(y1)
+                sx2 = self.canvas_to_screen_x(x2)
+                sy2 = self.canvas_to_screen_y(y2)
+                self.canvas.create_line(sx1, sy1, sx2, sy2, fill="green", width=2, tags="delaunay_edge")
+
+        if self.editor.show_voronoi and self.editor.voronoi_edges:
+            for (x1, y1), (x2, y2) in self.editor.voronoi_edges:
+                sx1 = self.canvas_to_screen_x(x1)
+                sy1 = self.canvas_to_screen_y(y1)
+                sx2 = self.canvas_to_screen_x(x2)
+                sy2 = self.canvas_to_screen_y(y2)
+                self.canvas.create_line(sx1, sy1, sx2, sy2, fill="orange", width=2, tags="voronoi_edge")
+
+        for x, y in self.editor.delaunay_points:
+            screen_x = self.canvas_to_screen_x(x)
+            screen_y = self.canvas_to_screen_y(y)
+            pixel_size = max(1, self.editor.scale_factor)
+            self.canvas.create_rectangle(screen_x, screen_y, screen_x + pixel_size, screen_y + pixel_size,
+                                         fill="blue", outline="blue", tags="delaunay_point")
+
         self.draw_current_polygon()
 
         self.canvas.delete("fill_pixel")

@@ -20,6 +20,7 @@ class ToolPanel:
         self.curve_type_var = ctk.StringVar(value="circle")
 
         self._create_widgets()
+        self.setup_delaunay_frame()
 
     def pack_widget(self):
         self.tool_frame.pack(side="right", fill="y", padx=5, pady=5)
@@ -58,6 +59,10 @@ class ToolPanel:
 
         self.polygon_tool_btn = ctk.CTkButton(inner, text="Полигон", command=self.select_polygon_tool, **btn_style)
         self.polygon_tool_btn.pack(pady=10, padx=15)
+
+        self.delaunay_tool_btn = ctk.CTkButton(inner, text="Триангуляция Делоне", command=self.select_delaunay_tool,
+                                               **btn_style)
+        self.delaunay_tool_btn.pack(pady=10, padx=15)
 
         self.fill_tool_btn = ctk.CTkButton(inner, text="Заливка", command=self.select_fill_tool, **btn_style)
         self.fill_tool_btn.pack(pady=10, padx=15)
@@ -131,6 +136,50 @@ class ToolPanel:
         self.fill_frame = ctk.CTkFrame(inner)
         self.fill_frame.pack_forget()
         self.setup_fill_functionality()
+
+    def select_delaunay_tool(self):
+        self.editor.current_tool = "delaunay"
+        self._highlight_button(self.delaunay_tool_btn)
+        self.line_tool_frame.pack_forget()
+        self.curves_tool_frame.pack_forget()
+        self.spline_tool_frame.pack_forget()
+        self.polygon_tool_frame.pack_forget()
+        self.fill_frame.pack_forget()
+        self.delaunay_frame.pack(fill="x", padx=10, pady=10)
+
+    def setup_delaunay_frame(self):
+        self.delaunay_frame = ctk.CTkFrame(self.tool_frame.inner_frame)
+        ctk.CTkLabel(self.delaunay_frame, text="Триангуляция Делоне / Вороного", font=ctk.CTkFont(weight="bold")).pack(
+            pady=5)
+        self.delaunay_info = ctk.CTkLabel(self.delaunay_frame, text="Кликните на холсте, чтобы добавить точки")
+        self.delaunay_info.pack(pady=5)
+        self.clear_points_btn = ctk.CTkButton(self.delaunay_frame, text="Очистить точки",
+                                              command=self.editor.canvas_widget.clear_delaunay_points)
+        self.clear_points_btn.pack(pady=5, fill="x")
+        self.compute_btn = ctk.CTkButton(self.delaunay_frame, text="Выполнить триангуляцию",
+                                         command=self.editor.canvas_widget.compute_delaunay_voronoi)
+        self.compute_btn.pack(pady=5, fill="x")
+        self.show_delaunay_var = ctk.BooleanVar(value=True)
+        self.show_delaunay_check = ctk.CTkCheckBox(self.delaunay_frame, text="Показать рёбра Делоне",
+                                                   variable=self.show_delaunay_var,
+                                                   command=self.toggle_delaunay_visibility)
+        self.show_delaunay_check.pack(anchor="w", padx=20, pady=2)
+        self.show_voronoi_var = ctk.BooleanVar(value=True)
+        self.show_voronoi_check = ctk.CTkCheckBox(self.delaunay_frame, text="Показать диаграмму Вороного",
+                                                  variable=self.show_voronoi_var,
+                                                  command=self.toggle_voronoi_visibility)
+        self.show_voronoi_check.pack(anchor="w", padx=20, pady=2)
+        self.clear_result_btn = ctk.CTkButton(self.delaunay_frame, text="Очистить результат",
+                                              command=self.editor.canvas_widget.clear_delaunay_result)
+        self.clear_result_btn.pack(pady=5, fill="x")
+
+    def toggle_delaunay_visibility(self):
+        self.editor.show_delaunay = self.show_delaunay_var.get()
+        self.editor.canvas_widget.redraw_canvas()
+
+    def toggle_voronoi_visibility(self):
+        self.editor.show_voronoi = self.show_voronoi_var.get()
+        self.editor.canvas_widget.redraw_canvas()
 
     def setup_fill_functionality(self):
         for widget in self.fill_frame.winfo_children():
