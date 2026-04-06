@@ -56,7 +56,6 @@ class PolygonTool:
             'pixel_ids': []
         }
         self.editor.polygons.append(polygon_info)
-        self.draw_polygon(polygon_info)
         self.clear_polygon_points()
         self.editor.status_bar.update_status("Полигон создан")
         self.canvas_widget.redraw_canvas()
@@ -75,7 +74,7 @@ class PolygonTool:
             return
         for i in range(len(vertices)):
             p1 = vertices[i]
-            p2 = vertices[(i+1) % len(vertices)]
+            p2 = vertices[(i + 1) % len(vertices)]
             pixels = bresenham_algorithm_pixels(p1[0], p1[1], p2[0], p2[1])
             for px, py in pixels:
                 screen_x = self.canvas_widget.canvas_to_screen_x(px)

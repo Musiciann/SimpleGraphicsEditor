@@ -117,6 +117,15 @@ class ToolPanel:
                                             command=self.editor.canvas_widget.reset_view)
         self.reset_view_btn.pack(pady=5)
 
+        self.hide_lines_2d_var = ctk.BooleanVar(value=False)
+        self.hide_lines_2d_check = ctk.CTkCheckBox(
+            self.common_settings_frame,
+            text="Скрывать линии за полигонами (2D)",
+            variable=self.hide_lines_2d_var,
+            command=self.toggle_hide_lines_2d
+        )
+        self.hide_lines_2d_check.pack(pady=5, padx=10, anchor="w")
+
         self.line_tool_frame = ctk.CTkFrame(inner)
         self.line_tool_frame.pack_forget()
         self.setup_line_tool_functionality()
@@ -137,6 +146,14 @@ class ToolPanel:
         self.fill_frame.pack_forget()
         self.setup_fill_functionality()
 
+    def toggle_hide_lines_2d(self):
+        self.editor.hide_lines_2d = self.hide_lines_2d_var.get()
+        self.editor.canvas_widget.redraw_canvas()
+
+    def toggle_backface_culling(self):
+        self.editor.backface_culling_3d = self.backface_culling_var.get()
+        self.editor.threed_canvas.draw()
+
     def select_delaunay_tool(self):
         self.editor.current_tool = "delaunay"
         self._highlight_button(self.delaunay_tool_btn)
@@ -145,6 +162,8 @@ class ToolPanel:
         self.spline_tool_frame.pack_forget()
         self.polygon_tool_frame.pack_forget()
         self.fill_frame.pack_forget()
+        if not hasattr(self, 'delaunay_frame'):
+            self.setup_delaunay_frame()
         self.delaunay_frame.pack(fill="x", padx=10, pady=10)
 
     def setup_delaunay_frame(self):
@@ -169,19 +188,14 @@ class ToolPanel:
                                                   variable=self.show_voronoi_var,
                                                   command=self.toggle_voronoi_visibility)
         self.show_voronoi_check.pack(anchor="w", padx=20, pady=2)
-        self.clear_result_btn = ctk.CTkButton(self.delaunay_frame, text="Очистить результат",
-                                              command=self.editor.canvas_widget.clear_delaunay_result)
-        self.clear_result_btn.pack(pady=5, fill="x")
-
         self.show_circum_var = ctk.BooleanVar(value=False)
         self.show_circum_check = ctk.CTkCheckBox(self.delaunay_frame, text="Показать описанные окружности",
                                                  variable=self.show_circum_var,
                                                  command=self.toggle_circumcircles)
         self.show_circum_check.pack(anchor="w", padx=20, pady=2)
-
-    def toggle_circumcircles(self):
-        self.editor.show_circumcircles = self.show_circum_var.get()
-        self.editor.canvas_widget.redraw_canvas()
+        self.clear_result_btn = ctk.CTkButton(self.delaunay_frame, text="Очистить результат",
+                                              command=self.editor.canvas_widget.clear_delaunay_result)
+        self.clear_result_btn.pack(pady=5, fill="x")
 
     def toggle_delaunay_visibility(self):
         self.editor.show_delaunay = self.show_delaunay_var.get()
@@ -189,6 +203,10 @@ class ToolPanel:
 
     def toggle_voronoi_visibility(self):
         self.editor.show_voronoi = self.show_voronoi_var.get()
+        self.editor.canvas_widget.redraw_canvas()
+
+    def toggle_circumcircles(self):
+        self.editor.show_circumcircles = self.show_circum_var.get()
         self.editor.canvas_widget.redraw_canvas()
 
     def setup_fill_functionality(self):

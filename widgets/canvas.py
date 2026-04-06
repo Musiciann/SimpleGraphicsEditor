@@ -27,6 +27,90 @@ class CanvasWidget:
 
         self.waiting_for_point = False
 
+    def draw_line_clipped(self, line_info):
+        if line_info.get('type') != 'line':
+            for pixel in line_info['pixels']:
+                if len(pixel) == 3:
+                    x, y, intensity = pixel
+                    color = LineTool.get_color_from_intensity(intensity)
+                else:
+                    x, y = pixel
+                    color = "black"
+                screen_x = self.canvas_to_screen_x(x)
+                screen_y = self.canvas_to_screen_y(y)
+                pixel_size = max(1, self.editor.scale_factor)
+                self.canvas.create_rectangle(
+                    screen_x, screen_y,
+                    screen_x + pixel_size, screen_y + pixel_size,
+                    fill=color, outline=color, tags="line_pixel"
+                )
+            return
+
+        x1, y1 = line_info['start']
+        x2, y2 = line_info['end']
+        pixels = line_info['pixels']
+        inside = [False] * len(pixels)
+        for i, (x, y) in enumerate(pixels):
+            for poly in self.editor.polygons:
+                if self.polygon_tool.point_in_polygon((x, y), poly['vertices']):
+                    inside[i] = True
+                    break
+
+        for i, (x, y) in enumerate(pixels):
+            if inside[i]:
+                continue
+            if len(pixels[i]) == 3:
+                x, y, intensity = pixels[i]
+                color = LineTool.get_color_from_intensity(intensity)
+            else:
+                x, y = pixels[i]
+                color = "black"
+            screen_x = self.canvas_to_screen_x(x)
+            screen_y = self.canvas_to_screen_y(y)
+            pixel_size = max(1, self.editor.scale_factor)
+            self.canvas.create_rectangle(
+                screen_x, screen_y,
+                screen_x + pixel_size, screen_y + pixel_size,
+                fill=color, outline=color, tags="line_pixel"
+            )
+
+    def draw_primitive_clipped(self, primitive):
+        if not self.editor.hide_lines_2d or not self.editor.polygons:
+            for pixel in primitive['pixels']:
+                if len(pixel) == 3:
+                    x, y, intensity = pixel
+                    color = LineTool.get_color_from_intensity(intensity)
+                else:
+                    x, y = pixel
+                    color = "black"
+                self._draw_pixel(x, y, color)
+            return
+
+        for pixel in primitive['pixels']:
+            if len(pixel) == 3:
+                x, y, intensity = pixel
+                color = LineTool.get_color_from_intensity(intensity)
+            else:
+                x, y = pixel
+                color = "black"
+            inside = False
+            for poly in self.editor.polygons:
+                if self.polygon_tool.point_in_polygon((x, y), poly['vertices']):
+                    inside = True
+                    break
+            if not inside:
+                self._draw_pixel(x, y, color)
+
+    def _draw_pixel(self, x, y, color):
+        screen_x = self.canvas_to_screen_x(x)
+        screen_y = self.canvas_to_screen_y(y)
+        pixel_size = max(1, self.editor.scale_factor)
+        self.canvas.create_rectangle(
+            screen_x, screen_y,
+            screen_x + pixel_size, screen_y + pixel_size,
+            fill=color, outline=color, tags="line_pixel"
+        )
+
     def canvas_to_screen_x(self, canvas_x):
         return CanvasScale.canvas_to_screen_x(self, canvas_x)
 
@@ -440,13 +524,10 @@ class CanvasWidget:
         self.editor.lines = []
         self.editor.points = []
         self.editor.polygons = []
-
         self.editor.delaunay_points = []
         self.editor.delaunay_edges = []
         self.editor.voronoi_edges = []
-        self.canvas.delete("delaunay_point")
-        self.canvas.delete("delaunay_edge")
-        self.canvas.delete("voronoi_edge")
+        self.editor.circumcircles = []
 
         if self.editor.grid_visible:
             self.draw_pixel_grid()
@@ -719,33 +800,43 @@ class CanvasWidget:
         self.editor.circumcircles = []
         self.canvas.delete("delaunay_edge")
         self.canvas.delete("voronoi_edge")
+        self.canvas.delete("circumcircle")
         self.editor.status_bar.update_status("Результаты триангуляции удалены")
 
     def compute_delaunay_voronoi(self):
         if len(self.editor.delaunay_points) < 3:
             self.editor.status_bar.update_status("Нужно хотя бы 3 точки для триангуляции")
             return
-        from algorithms.algorithms import delaunay_triangulation, voronoi_from_delaunay
+        from algorithms.algorithms import delaunay_triangulation, voronoi_from_delaunay, get_circumcircles
         points = self.editor.delaunay_points
         triangles = delaunay_triangulation(points)
         if not triangles:
             self.editor.status_bar.update_status("Не удалось построить триангуляцию")
             return
-
-        from algorithms.algorithms import get_circumcircles
-        self.editor.circumcircles = get_circumcircles(triangles, points)
-
         edges_set = set()
         for tri in triangles:
             for i in range(3):
-                a, b = tri[i], tri[(i + 1) % 3]
-                key = tuple(sorted((a, b)))
+                a, b = tri[i], tri[(i+1)%3]
+                key = tuple(sorted((a,b)))
                 edges_set.add(key)
-        self.editor.delaunay_edges = [(points[a], points[b]) for (a, b) in edges_set]
-
+        self.editor.delaunay_edges = [(points[a], points[b]) for (a,b) in edges_set]
         width = self.editor.original_width
         height = self.editor.original_height
         self.editor.voronoi_edges = voronoi_from_delaunay(points, triangles, width, height)
+        self.editor.circumcircles = get_circumcircles(triangles, points)
         self.redraw_canvas()
-        self.editor.status_bar.update_status(
-            f"Триангуляция: {len(triangles)} треугольников, {len(self.editor.voronoi_edges)} рёбер Вороного")
+        self.editor.status_bar.update_status(f"Триангуляция: {len(triangles)} треугольников, {len(self.editor.voronoi_edges)} рёбер Вороного")
+
+    def is_segment_fully_inside_polygon(self, x1, y1, x2, y2, poly_vertices, eps=0.5):
+        inside1 = self.polygon_tool.point_in_polygon((x1, y1), poly_vertices)
+        inside2 = self.polygon_tool.point_in_polygon((x2, y2), poly_vertices)
+        if not (inside1 and inside2):
+            return False
+        if abs(x1 - x2) < eps and abs(y1 - y2) < eps:
+            return True
+        mx = (x1 + x2) / 2
+        my = (y1 + y2) / 2
+        if self.polygon_tool.point_in_polygon((mx, my), poly_vertices):
+            return (self.is_segment_fully_inside_polygon(x1, y1, mx, my, poly_vertices, eps) and
+                    self.is_segment_fully_inside_polygon(mx, my, x2, y2, poly_vertices, eps))
+        return False

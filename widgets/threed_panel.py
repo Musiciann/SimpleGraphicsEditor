@@ -101,6 +101,15 @@ class ThreeDPanel:
         )
         self.reset_btn.pack(pady=10, fill="x")
 
+        self.backface_culling_var = ctk.BooleanVar(value=False)
+        self.backface_culling_check = ctk.CTkCheckBox(
+            inner,
+            text="Удаление невидимых граней",
+            variable=self.backface_culling_var,
+            command=self.toggle_backface_culling
+        )
+        self.backface_culling_check.pack(pady=5, padx=10, anchor="w")
+
     def pack_widget(self):
         self.frame.pack(side="right", fill="y", padx=5, pady=5)
 
@@ -110,23 +119,32 @@ class ThreeDPanel:
     def show(self):
         self.frame.pack(side="right", fill="y", padx=5, pady=5)
 
+    def toggle_backface_culling(self):
+        self.editor.backface_culling_3d = self.backface_culling_var.get()
+        self.editor.threed_canvas.draw()
+
     def new_object_dialog(self):
         dialog = ctk.CTkToplevel(self.editor.root)
         dialog.title("Создание 3D объекта")
-        dialog.geometry("600x500")
+        dialog.geometry("600x650")
         dialog.transient(self.editor.root)
         dialog.grab_set()
         dialog.configure(fg_color=("#2b2b2b", "#1e1e1e"))
 
         ctk.CTkLabel(dialog, text="Вершины (x y z), каждая на новой строке:",
                      font=ctk.CTkFont(size=12)).pack(anchor="w", padx=10, pady=(10,0))
-        verts_text = ctk.CTkTextbox(dialog, height=200)
+        verts_text = ctk.CTkTextbox(dialog, height=150)
         verts_text.pack(fill="x", padx=10, pady=5)
 
-        ctk.CTkLabel(dialog, text="Ребра (индексы i j), каждая на новой строке:",
+        ctk.CTkLabel(dialog, text="Рёбра (индексы i j), каждая на новой строке:",
                      font=ctk.CTkFont(size=12)).pack(anchor="w", padx=10, pady=(10,0))
-        edges_text = ctk.CTkTextbox(dialog, height=150)
+        edges_text = ctk.CTkTextbox(dialog, height=100)
         edges_text.pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkLabel(dialog, text="Грани (индексы вершин через пробел), каждая на новой строке (необязательно):",
+                     font=ctk.CTkFont(size=12)).pack(anchor="w", padx=10, pady=(10,0))
+        faces_text = ctk.CTkTextbox(dialog, height=100)
+        faces_text.pack(fill="x", padx=10, pady=5)
 
         def create():
             try:
@@ -142,10 +160,16 @@ class ThreeDPanel:
                     if line.strip():
                         parts = line.strip().split()
                         edges.append((int(parts[0]), int(parts[1])))
+                faces_data = faces_text.get("0.0", "end").strip().split('\n')
+                faces = []
+                for line in faces_data:
+                    if line.strip():
+                        parts = line.strip().split()
+                        faces.append([int(p) for p in parts])
                 if not verts:
                     messagebox.showerror("Ошибка", "Нет вершин")
                     return
-                self.editor.threed_canvas.set_object(verts, edges)
+                self.editor.threed_canvas.set_object(verts, edges, faces)
                 dialog.destroy()
             except Exception as e:
                 messagebox.showerror("Ошибка", f"Неверный формат данных:\n{str(e)}")

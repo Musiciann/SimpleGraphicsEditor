@@ -1,4 +1,3 @@
-from tools import LineTool
 from algorithms.algorithms import bresenham_algorithm_pixels
 
 class CanvasScale:
@@ -35,67 +34,50 @@ class CanvasScale:
     def zoom_in(self, event=None):
         if not self.editor.canvas_created:
             return
-
         old_scale = self.editor.scale_factor
         new_scale = min(10.0, self.editor.scale_factor * 1.2)
-
         if old_scale == new_scale:
             return
-
         if event:
             mouse_canvas_x = self.screen_to_canvas_x(event.x)
             mouse_canvas_y = self.screen_to_canvas_y(event.y)
-
             self.editor.scale_factor = new_scale
-
             new_mouse_screen_x = self.canvas_to_screen_x(mouse_canvas_x)
             new_mouse_screen_y = self.canvas_to_screen_y(mouse_canvas_y)
-
             dx = new_mouse_screen_x - event.x
             dy = new_mouse_screen_y - event.y
-
             self.editor.view_offset_x -= dx
             self.editor.view_offset_y -= dy
         else:
             self.editor.scale_factor = new_scale
-
         self.redraw_canvas()
 
     @staticmethod
     def zoom_out(self, event=None):
         if not self.editor.canvas_created:
             return
-
         old_scale = self.editor.scale_factor
         new_scale = max(0.1, self.editor.scale_factor / 1.2)
-
         if old_scale == new_scale:
             return
-
         if event:
             mouse_canvas_x = self.screen_to_canvas_x(event.x)
             mouse_canvas_y = self.screen_to_canvas_y(event.y)
-
             self.editor.scale_factor = new_scale
-
             new_mouse_screen_x = self.canvas_to_screen_x(mouse_canvas_x)
             new_mouse_screen_y = self.canvas_to_screen_y(mouse_canvas_y)
-
             dx = new_mouse_screen_x - event.x
             dy = new_mouse_screen_y - event.y
-
             self.editor.view_offset_x -= dx
             self.editor.view_offset_y -= dy
         else:
             self.editor.scale_factor = new_scale
-
         self.redraw_canvas()
 
     @staticmethod
     def reset_zoom(self):
         if not self.editor.canvas_created:
             return
-
         self.editor.scale_factor = 1.0
         self.editor.view_offset_x = 0
         self.editor.view_offset_y = 0
@@ -130,28 +112,7 @@ class CanvasScale:
 
         if not self.editor.debug_mode:
             for line_info in self.editor.lines:
-                for pixel in line_info['pixels']:
-                    if len(pixel) == 3:
-                        x, y, intensity = pixel
-                        color = LineTool.get_color_from_intensity(intensity)
-                    else:
-                        x, y = pixel
-                        color = "black"
-
-                    screen_x = self.canvas_to_screen_x(x)
-                    screen_y = self.canvas_to_screen_y(y)
-
-                    pixel_size = max(1, self.editor.scale_factor)
-
-                    x1 = screen_x
-                    y1 = screen_y
-                    x2 = screen_x + pixel_size
-                    y2 = screen_y + pixel_size
-
-                    self.canvas.create_rectangle(
-                        x1, y1, x2, y2,
-                        fill=color, outline=color, tags="line_pixel"
-                    )
+                self.draw_primitive_clipped(line_info)
 
             for point_info in self.editor.points:
                 x, y = point_info['x'], point_info['y']
@@ -160,16 +121,15 @@ class CanvasScale:
 
                 screen_x = self.canvas_to_screen_x(x)
                 screen_y = self.canvas_to_screen_y(y)
-
                 pixel_size = max(1, self.editor.scale_factor)
 
-                x1 = screen_x
-                y1 = screen_y
-                x2 = screen_x + pixel_size
-                y2 = screen_y + pixel_size
+                x1_r = screen_x
+                y1_r = screen_y
+                x2_r = screen_x + pixel_size
+                y2_r = screen_y + pixel_size
 
                 self.canvas.create_rectangle(
-                    x1, y1, x2, y2,
+                    x1_r, y1_r, x2_r, y2_r,
                     fill=color, outline=color, tags=tag
                 )
         else:
@@ -181,16 +141,15 @@ class CanvasScale:
 
                     screen_x = self.canvas_to_screen_x(x)
                     screen_y = self.canvas_to_screen_y(y)
-
                     pixel_size = max(1, self.editor.scale_factor)
 
-                    x1 = screen_x
-                    y1 = screen_y
-                    x2 = screen_x + pixel_size
-                    y2 = screen_y + pixel_size
+                    x1_r = screen_x
+                    y1_r = screen_y
+                    x2_r = screen_x + pixel_size
+                    y2_r = screen_y + pixel_size
 
                     self.canvas.create_rectangle(
-                        x1, y1, x2, y2,
+                        x1_r, y1_r, x2_r, y2_r,
                         fill=color, outline=color, tags=tag
                     )
 
@@ -235,13 +194,11 @@ class CanvasScale:
                 screen_cx = self.canvas_to_screen_x(cx)
                 screen_cy = self.canvas_to_screen_y(cy)
                 screen_r = r * self.editor.scale_factor
-
                 self.canvas.create_oval(
                     screen_cx - screen_r, screen_cy - screen_r,
                     screen_cx + screen_r, screen_cy + screen_r,
                     outline="purple", width=1, tags="circumcircle"
                 )
-
                 self.canvas.create_rectangle(
                     screen_cx - 1, screen_cy - 1, screen_cx + 1, screen_cy + 1,
                     fill="purple", outline="purple", tags="circumcircle"

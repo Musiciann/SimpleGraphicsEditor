@@ -41,7 +41,7 @@ class SplashScreen:
 
         version_label = ctk.CTkLabel(
             main_frame,
-            text="Версия 0.8.1",
+            text="Версия 0.9.0",
             font=ctk.CTkFont(size=12),
             text_color=("gray60", "gray80")
         )

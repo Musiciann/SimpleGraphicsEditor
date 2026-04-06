@@ -75,11 +75,16 @@ class GraphicsEditor:
         self.threed_panel.pack_widget()
         self.threed_panel.hide()
 
+        self.hide_lines_2d = False
+        self.backface_culling_3d = False
+
         self.delaunay_points = []
         self.delaunay_edges = []
         self.voronoi_edges = []
+        self.circumcircles = []
         self.show_delaunay = True
         self.show_voronoi = True
+        self.show_circumcircles = False
 
     def after_splash(self):
         self.root.deiconify()
@@ -226,8 +231,10 @@ class GraphicsEditor:
             "внутренние нормали, выпуклые оболочки (Грэхем, Джарвис),\n"
             "принадлежность точки полигону, пересечение отрезка с полигоном.\n\n"
             "Добавлена возможность заливки полигонов разными цветами алгоритмами \n"
-            "затравки, растровой развёртки и по активным рёбрам\n\n"
-            "Версия: 0.8.1"
+            "затравки, растровой развёртки и по активным рёбрам.\n\n"
+            "Добавлен функционал для построения триангуляции Делоне и диаграммы Вороного.\n\n"
+            "Добавленна возможность удаления невидимых линий и поверхностей.\n\n"
+            "Версия: 0.9.0"
         )
 
     def run(self):

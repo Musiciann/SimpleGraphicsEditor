@@ -1,6 +1,7 @@
 def load_from_file(filename):
     vertices = []
     edges = []
+    faces = []
     with open(filename, 'r') as f:
         lines = f.readlines()
     idx = 0
@@ -16,10 +17,18 @@ def load_from_file(filename):
         parts = lines[idx].strip().split()
         edges.append((int(parts[0]), int(parts[1])))
         idx += 1
-    return vertices, edges
 
-def save_to_file(filename, vertices, edges):
+    if idx < len(lines):
+        n_faces = int(lines[idx].strip())
+        idx += 1
+        for i in range(n_faces):
+            parts = lines[idx].strip().split()
+            face = [int(p) for p in parts]
+            faces.append(face)
+            idx += 1
+    return vertices, edges, faces
 
+def save_to_file(filename, vertices, edges, faces=None):
     with open(filename, 'w') as f:
         f.write(f"{len(vertices)}\n")
         for v in vertices:
@@ -27,3 +36,8 @@ def save_to_file(filename, vertices, edges):
         f.write(f"{len(edges)}\n")
         for e in edges:
             f.write(f"{e[0]} {e[1]}\n")
+        if faces is None:
+            faces = []
+        f.write(f"{len(faces)}\n")
+        for face in faces:
+            f.write(" ".join(str(i) for i in face) + "\n")
