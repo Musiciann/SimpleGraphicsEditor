@@ -173,6 +173,16 @@ class ToolPanel:
                                               command=self.editor.canvas_widget.clear_delaunay_result)
         self.clear_result_btn.pack(pady=5, fill="x")
 
+        self.show_circum_var = ctk.BooleanVar(value=False)
+        self.show_circum_check = ctk.CTkCheckBox(self.delaunay_frame, text="Показать описанные окружности",
+                                                 variable=self.show_circum_var,
+                                                 command=self.toggle_circumcircles)
+        self.show_circum_check.pack(anchor="w", padx=20, pady=2)
+
+    def toggle_circumcircles(self):
+        self.editor.show_circumcircles = self.show_circum_var.get()
+        self.editor.canvas_widget.redraw_canvas()
+
     def toggle_delaunay_visibility(self):
         self.editor.show_delaunay = self.show_delaunay_var.get()
         self.editor.canvas_widget.redraw_canvas()

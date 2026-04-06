@@ -230,6 +230,23 @@ class CanvasScale:
                 sy2 = self.canvas_to_screen_y(y2)
                 self.canvas.create_line(sx1, sy1, sx2, sy2, fill="orange", width=2, tags="voronoi_edge")
 
+        if self.editor.show_circumcircles and hasattr(self.editor, 'circumcircles'):
+            for cx, cy, r in self.editor.circumcircles:
+                screen_cx = self.canvas_to_screen_x(cx)
+                screen_cy = self.canvas_to_screen_y(cy)
+                screen_r = r * self.editor.scale_factor
+
+                self.canvas.create_oval(
+                    screen_cx - screen_r, screen_cy - screen_r,
+                    screen_cx + screen_r, screen_cy + screen_r,
+                    outline="purple", width=1, tags="circumcircle"
+                )
+
+                self.canvas.create_rectangle(
+                    screen_cx - 1, screen_cy - 1, screen_cx + 1, screen_cy + 1,
+                    fill="purple", outline="purple", tags="circumcircle"
+                )
+
         for x, y in self.editor.delaunay_points:
             screen_x = self.canvas_to_screen_x(x)
             screen_y = self.canvas_to_screen_y(y)

@@ -382,3 +382,15 @@ def voronoi_from_delaunay(points, triangles, width, height):
             if clipped:
                 segments.append(((clipped[0], clipped[1]), (clipped[2], clipped[3])))
     return segments
+
+def get_circumcircles(triangles, points):
+    circles = []
+    for tri in triangles:
+        a, b, c = tri
+        p1 = points[a]
+        p2 = points[b]
+        p3 = points[c]
+        cx, cy, rad_sq = circumcircle(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1])
+        if rad_sq < float('inf'):
+            circles.append((cx, cy, math.sqrt(rad_sq)))
+    return circles

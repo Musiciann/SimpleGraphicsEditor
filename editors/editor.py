@@ -27,6 +27,7 @@ class GraphicsEditor:
         self.selected_curve_type = "circle"
         self.debug_mode = False
         self.grid_visible = False
+        self.show_circumcircles = False
         self.start_point = None
         self.end_point = None
         self.scale_factor = 1.0

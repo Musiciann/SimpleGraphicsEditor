@@ -716,6 +716,7 @@ class CanvasWidget:
     def clear_delaunay_result(self):
         self.editor.delaunay_edges = []
         self.editor.voronoi_edges = []
+        self.editor.circumcircles = []
         self.canvas.delete("delaunay_edge")
         self.canvas.delete("voronoi_edge")
         self.editor.status_bar.update_status("Результаты триангуляции удалены")
@@ -730,6 +731,9 @@ class CanvasWidget:
         if not triangles:
             self.editor.status_bar.update_status("Не удалось построить триангуляцию")
             return
+
+        from algorithms.algorithms import get_circumcircles
+        self.editor.circumcircles = get_circumcircles(triangles, points)
 
         edges_set = set()
         for tri in triangles:
